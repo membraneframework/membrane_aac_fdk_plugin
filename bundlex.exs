@@ -11,7 +11,8 @@ defmodule Membrane.Element.AAC.BundlexProject do
     [
       decoder: [
         deps: [unifex: :unifex],
-        sources: ["_generated/decoder.c", "decoder.c"]
+        sources: ["_generated/decoder.c", "decoder.c"],
+        libs: ["fdk-aac"]
       ]
     ]
   end
