@@ -6,6 +6,8 @@ It is part of [Membrane Multimedia Framework](https://membraneframework.org).
 
 ## Installation
 
+This package depends on [FDK-AAC](https://github.com/mstorsjo/fdk-aac) library.
+
 The package can be installed by adding `membrane_element_aac` to your list of dependencies in `mix.exs`:
 
 ```elixir
