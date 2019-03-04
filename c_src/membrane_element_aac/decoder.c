@@ -16,7 +16,7 @@ UNIFEX_TERM create(UnifexEnv *env) {
   state->decoder_buffer = unifex_alloc(state->decoder_buffer_size);
 
   if (!state->decoder_buffer) {
-    return create_result_error_unknown(env);  // TODO: return NOMEM
+    return create_result_error_no_memory(env);
   }
 
   UNIFEX_TERM res = create_result_ok(env, state);
