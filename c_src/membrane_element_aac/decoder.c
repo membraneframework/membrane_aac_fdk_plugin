@@ -57,7 +57,12 @@ UNIFEX_TERM decode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
   UnifexPayload *out_payload = unifex_payload_alloc(env, in_payload->type, stream_info->frameSize);
   memcpy(out_payload->data, state->decoder_buffer, stream_info->frameSize);
 
-  res = decode_frame_result_ok(env, out_payload);
+  res = decode_frame_result_ok(
+      env,
+      out_payload,
+      stream_info->frameSize,
+      stream_info->sampleRate,
+      stream_info->numChannels);
   unifex_payload_release_ptr(&out_payload);
   return res;
 }
