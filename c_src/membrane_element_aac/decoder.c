@@ -1,8 +1,21 @@
 #include "decoder.h"
 
+/**
+ * AAC Decoder implementation.
+ * Heavily inspired by https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libfdk-aacdec.c
+ */
+
 #define DECODER_MAX_CHANNELS 8
 #define DECODER_BUFFSIZE 2048 * sizeof(INT_PCM)
 
+/**
+ * Initializes AAC Decoder and returns State resource.
+ * 
+ * On success, returns {:ok, decoder_state}
+ * In case of error, returns:
+ * - {:error, :unknown} - If AAC decoder cannot be initialized
+ * - {:error, :no_memory} - If there's not enough memory to initialize AAC buffer
+ */
 UNIFEX_TERM create(UnifexEnv *env) {
   State *state = unifex_alloc_state(env);
 
@@ -25,6 +38,21 @@ UNIFEX_TERM create(UnifexEnv *env) {
   return res;
 }
 
+/**
+ * Decodes one input frame.
+ * 
+ * Expects:
+ * - Buffer to decode
+ * - Native resource
+ * as arguments
+ * 
+ * Returns one of:
+ * - {:ok, {decoded_frame, frame_size, sample_rate, channels}}
+ *    decoded audio frame with stream info
+ * - {:error, :invalid_data}
+ * - {:error, :not_enough_bits}
+ * - {:error, :unknown}
+ */
 UNIFEX_TERM decode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state) {
   UNIFEX_TERM res;
   AAC_DECODER_ERROR err;
@@ -47,7 +75,7 @@ UNIFEX_TERM decode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
       0);
   if (err == AAC_DEC_NOT_ENOUGH_BITS) {
     MEMBRANE_WARN(env, "AAC: aacDecoder_DecodeFrame() - not enough bits supplied");
-    return decode_frame_result_error_unknown(env);
+    return decode_frame_result_error_not_enough_bits(env);
   }
   if (err != AAC_DEC_OK) {
     MEMBRANE_WARN(env, "AAC: aacDecoder_DecodeFrame() failed: %x\n", err);

@@ -6,4 +6,5 @@ spec create() :: {:ok :: label, state}
 
 spec decode_frame(payload, state) :: {:ok :: label, {payload, frame_size :: long, sample_rate :: long, channels :: int}}
   | {:error :: label, :invalid_data :: label}
+  | {:error :: label, :not_enough_bits :: label}
   | {:error :: label, :unknown :: label}
