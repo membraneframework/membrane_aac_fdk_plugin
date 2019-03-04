@@ -6,7 +6,7 @@
 UNIFEX_TERM create(UnifexEnv *env) {
   State *state = unifex_alloc_state(env);
 
-  state->handle = aacDecoder_Open(TT_MP4_RAW, 1);
+  state->handle = aacDecoder_Open(TT_MP4_ADTS, 1);
 
   if (!state->handle) {
     return create_result_error_unknown(env);
@@ -52,7 +52,11 @@ UNIFEX_TERM decode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
     return decode_frame_result_error_unknown(env);
   }
 
-  UnifexPayload *out_payload = unifex_payload_alloc(env, in_payload->type, (unsigned int)valid);
+  CStreamInfo *stream_info = aacDecoder_GetStreamInfo(state->handle);
+
+  UnifexPayload *out_payload = unifex_payload_alloc(env, in_payload->type, stream_info->frameSize);
+  memcpy(out_payload->data, state->decoder_buffer, stream_info->frameSize);
+
   res = decode_frame_result_ok(env, out_payload);
   unifex_payload_release_ptr(&out_payload);
   return res;
