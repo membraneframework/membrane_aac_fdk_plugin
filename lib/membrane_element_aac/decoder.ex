@@ -1,6 +1,7 @@
-defmodule Membrane.Element.AAC.Filter do
+defmodule Membrane.Element.AAC.Decoder do
   use Membrane.Element.Base.Filter
   alias __MODULE__.Native
+  alias Membrane.Buffer
   alias Membrane.Caps.Audio.Raw
 
   def_input_pads input: [
@@ -18,7 +19,7 @@ defmodule Membrane.Element.AAC.Filter do
   end
 
   @impl true
-  def handle_prepared_to_playing(_ctx, state) do
+  def handle_stopped_to_prepared(_ctx, state) do
     with {:ok, native} <- Native.create() do
       {:ok, %{state | native: native}}
     else
@@ -27,31 +28,29 @@ defmodule Membrane.Element.AAC.Filter do
   end
 
   @impl true
-  def handle_demand(_output_pad, _size, _unit, _ctx, state) do
+  def handle_demand(:output, size, :buffers, _ctx, state) do
+    {{:ok, demand: {:input, size}}, state}
+  end
+
+  @impl true
+  def handle_caps(:input, _caps, _ctx, state) do
     {:ok, state}
   end
 
   @impl true
-  def handle_process(:input, buffer, ctx, state) do
-    to_decode = state.queue <> buffer.payload
+  def handle_process(:input, %Buffer{payload: payload}, ctx, state) do
+    to_decode = state.queue <> payload
 
-    case decode_buffer(state.native, to_decode, ctx.pads.output.caps) do
-      {:ok, {new_queue, actions}} ->
-        {{:ok, actions ++ [redemand: :output]}, %{state | queue: new_queue}}
+    with {:ok, {next_frame}} <- Native.decode_frame(to_decode, state.native) do
+      new_caps = %Raw{format: :s24le}
 
+      caps_action = if ctx.pads.output.caps == new_caps, do: [], else: [caps: {:output, new_caps}]
+      buffer_action = [buffer: {:output, %Buffer{payload: next_frame}}]
+
+      {{:ok, caps_action ++ buffer_action ++ [redemand: :output]}, state}
+    else
       {:error, reason} ->
         {{:error, reason}, state}
-    end
-  end
-
-  defp decode_buffer(native, buffer, caps, acc \\ [])
-
-  defp decode_buffer(_native, <<>>, _caps, acc) do
-    {:ok, {<<>>, Enum.reverse(acc)}}
-  end
-
-  defp decode_buffer(native, buffer, caps, acc) when byte_size(buffer) > 0 do
-    with {:ok, {decoded_frame}} <- Native.decoded_frame(buffer, native) do
     end
   end
 end
