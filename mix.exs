@@ -56,6 +56,7 @@ defmodule Membrane.Element.AAC.MixProject do
     [
       {:membrane_core, "~> 0.2.2"},
       {:membrane_common_c, "~> 0.2.1"},
+      {:bunch, "~> 1.0"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false},
       {:unifex, "~> 0.2.3"},

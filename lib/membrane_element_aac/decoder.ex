@@ -3,6 +3,7 @@ defmodule Membrane.Element.AAC.Decoder do
   alias __MODULE__.Native
   alias Membrane.Buffer
   alias Membrane.Caps.Audio.Raw
+  use Bunch
 
   def_input_pads input: [
                    caps: :any,
@@ -90,8 +91,7 @@ defmodule Membrane.Element.AAC.Decoder do
   defp wrap_frames([]), do: []
 
   defp wrap_frames(frames) do
-    frame_buffers = frames |> Enum.map(fn frame -> %Buffer{payload: frame} end)
-    [buffer: {:output, frame_buffers}]
+    frames |> Enum.map(fn frame -> %Buffer{payload: frame} end) ~> [buffer: {:output, &1}]
   end
 
   defp get_caps_if_needed(nil, state) do
