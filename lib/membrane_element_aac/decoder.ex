@@ -42,6 +42,20 @@ defmodule Membrane.Element.AAC.Decoder do
     {:ok, state}
   end
 
+  @doc """
+  Handles parsing buffer payload to raw audio frames.
+
+  The flow is as follows:
+  1. Fill the native buffer using `Native.fill` with input buffer content
+  2. Natively decode audio frames using `Native.decode_frame`.
+  Since the input buffer can contain more than one frame,
+  we're calling `decode_frame` until it returns `:not_enough_bits`
+  to ensure we're emptying the whole native buffer.
+  3. Set output caps based on the stream metadata.
+  This should execute only once when output caps are not specified yet,
+  since they should stay consistent forthe whole stream.
+  4. In case an unhandled error is returned during this flow, returns error message.
+  """
   @impl true
   def handle_process(:input, %Buffer{payload: payload}, ctx, state) do
     with {:ok} <- Native.fill(payload, state.native),
@@ -61,9 +75,11 @@ defmodule Membrane.Element.AAC.Decoder do
   defp decode_buffer(payload, native, acc) do
     case Native.decode_frame(payload, native) do
       {:ok, decoded_frame} ->
+        # Accumulate decoded frames
         decode_buffer(payload, native, acc ++ [decoded_frame])
 
       {:error, :not_enough_bits} ->
+        # Means that we've parsed the whole buffer.
         {:ok, acc}
 
       {:error, reason} ->
