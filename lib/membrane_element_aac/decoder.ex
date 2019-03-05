@@ -10,7 +10,7 @@ defmodule Membrane.Element.AAC.Decoder do
                  ]
 
   def_output_pads output: [
-                    caps: {Raw, format: :s24le}
+                    caps: {Raw, format: :s16le}
                   ]
 
   @impl true
@@ -48,7 +48,7 @@ defmodule Membrane.Element.AAC.Decoder do
 
     with {:ok, {next_frame, frame_size, sample_rate, channels}} <-
            Native.decode_frame(to_decode, state.native) do
-      new_caps = %Raw{format: :s24le, sample_rate: sample_rate, channels: channels}
+      new_caps = %Raw{format: :s16le, sample_rate: sample_rate, channels: channels}
 
       caps_action = if ctx.pads.output.caps == new_caps, do: [], else: [caps: {:output, new_caps}]
       buffer_action = [buffer: {:output, %Buffer{payload: next_frame}}]
