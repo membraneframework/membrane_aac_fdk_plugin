@@ -15,7 +15,7 @@ defmodule Membrane.Element.AAC.Decoder do
 
   @impl true
   def handle_init(_) do
-    {:ok, %{queue: <<>>, native: nil}}
+    {:ok, %{native: nil}}
   end
 
   @impl true
@@ -44,19 +44,44 @@ defmodule Membrane.Element.AAC.Decoder do
 
   @impl true
   def handle_process(:input, %Buffer{payload: payload}, ctx, state) do
-    to_decode = state.queue <> payload
+    with {:ok} <- Native.fill(payload, state.native),
+         {:ok, decoded_frames} <- decode_buffer(payload, state.native),
+         {:ok, caps_action} <- get_caps_if_needed(ctx.pads.output.caps, state) do
+      buffer_actions = wrap_frames(decoded_frames)
 
-    with {:ok, {next_frame, frame_size, sample_rate, channels}} <-
-           Native.decode_frame(to_decode, state.native) do
-      new_caps = %Raw{format: :s16le, sample_rate: sample_rate, channels: channels}
-
-      caps_action = if ctx.pads.output.caps == new_caps, do: [], else: [caps: {:output, new_caps}]
-      buffer_action = [buffer: {:output, %Buffer{payload: next_frame}}]
-
-      {{:ok, caps_action ++ buffer_action ++ [redemand: :output]}, state}
+      {{:ok, caps_action ++ buffer_actions ++ [redemand: :output]}, state}
     else
       {:error, reason} ->
         {{:error, reason}, state}
     end
   end
+
+  defp decode_buffer(payload, native, acc \\ [])
+
+  defp decode_buffer(payload, native, acc) do
+    case Native.decode_frame(payload, native) do
+      {:ok, decoded_frame} ->
+        decode_buffer(payload, native, acc ++ [decoded_frame])
+
+      {:error, :not_enough_bits} ->
+        {:ok, acc}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp wrap_frames([]), do: []
+
+  defp wrap_frames(frames) do
+    frame_buffers = frames |> Enum.map(fn frame -> %Buffer{payload: frame} end)
+    [buffer: {:output, frame_buffers}]
+  end
+
+  defp get_caps_if_needed(nil, state) do
+    {:ok, {_frame_size, sample_rate, channels}} = Native.get_metadata(state.native)
+    {:ok, caps: {:output, %Raw{format: :s16le, sample_rate: sample_rate, channels: channels}}}
+  end
+
+  defp get_caps_if_needed(_, _), do: {:ok, []}
 end

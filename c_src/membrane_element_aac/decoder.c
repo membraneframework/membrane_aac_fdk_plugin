@@ -39,6 +39,58 @@ UNIFEX_TERM create(UnifexEnv *env) {
 }
 
 /**
+ * Returns AAC stream metadata
+ * 
+ * Expects Native resource as argument
+ * 
+ * Returns:
+ * - {:ok, {frame_size, sample_rate, channels}}
+ */
+UNIFEX_TERM get_metadata(UnifexEnv *env, State *state) {
+  UNIFEX_TERM res;
+
+  CStreamInfo *stream_info = aacDecoder_GetStreamInfo(state->handle);
+
+  res = get_metadata_result(
+      env,
+      stream_info->frameSize,
+      stream_info->sampleRate,
+      stream_info->numChannels);
+  return res;
+}
+
+/**
+ * Fills internal AAC Decoder buffer with input buffer
+ * 
+ * Expects:
+ * - Buffer to decode
+ * - Native resource
+ * as arguments
+ * 
+ * Returns one of:
+ * - {:ok}
+ * - {:error, :invalid_data}
+ */
+UNIFEX_TERM fill(UnifexEnv *env, UnifexPayload *in_payload, State *state) {
+  UNIFEX_TERM res;
+  AAC_DECODER_ERROR err;
+  UINT valid = in_payload->size;
+
+  err = aacDecoder_Fill(
+      state->handle,
+      &in_payload->data,
+      &in_payload->size,
+      &valid);
+  if (err != AAC_DEC_OK) {
+    MEMBRANE_WARN(env, "AAC: aacDecoder_Fill() failed: %x\n", err);
+    return fill_result_error_invalid_data(env);
+  }
+
+  res = fill_result_ok(env);
+  return res;
+}
+
+/**
  * Decodes one input frame.
  * 
  * Expects:
@@ -56,17 +108,6 @@ UNIFEX_TERM create(UnifexEnv *env) {
 UNIFEX_TERM decode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state) {
   UNIFEX_TERM res;
   AAC_DECODER_ERROR err;
-  UINT valid = in_payload->size;
-
-  err = aacDecoder_Fill(
-      state->handle,
-      &in_payload->data,
-      &in_payload->size,
-      &valid);
-  if (err != AAC_DEC_OK) {
-    MEMBRANE_WARN(env, "AAC: aacDecoder_Fill() failed: %x\n", err);
-    return decode_frame_result_error_invalid_data(env);
-  }
 
   err = aacDecoder_DecodeFrame(
       state->handle,
@@ -93,10 +134,7 @@ UNIFEX_TERM decode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
 
   res = decode_frame_result_ok(
       env,
-      out_payload,
-      stream_info->frameSize,
-      stream_info->sampleRate,
-      stream_info->numChannels);
+      out_payload);
   unifex_payload_release_ptr(&out_payload);
   return res;
 }
