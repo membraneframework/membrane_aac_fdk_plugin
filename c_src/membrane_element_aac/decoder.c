@@ -54,8 +54,12 @@ UNIFEX_TERM decode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
 
   CStreamInfo *stream_info = aacDecoder_GetStreamInfo(state->handle);
 
-  UnifexPayload *out_payload = unifex_payload_alloc(env, in_payload->type, stream_info->frameSize);
-  memcpy(out_payload->data, state->decoder_buffer, stream_info->frameSize);
+  UINT out_payload_size = stream_info->frameSize * stream_info->numChannels * sizeof(INT_PCM);
+  UnifexPayload *out_payload = unifex_payload_alloc(env, in_payload->type, out_payload_size);
+  memcpy(
+      out_payload->data,
+      state->decoder_buffer,
+      out_payload_size);
 
   res = decode_frame_result_ok(
       env,
