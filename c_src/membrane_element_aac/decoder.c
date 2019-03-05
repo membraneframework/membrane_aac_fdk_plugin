@@ -85,6 +85,10 @@ UNIFEX_TERM fill(UnifexEnv *env, UnifexPayload *in_payload, State *state) {
     MEMBRANE_WARN(env, "AAC: aacDecoder_Fill() failed: %x\n", err);
     return fill_result_error_invalid_data(env);
   }
+  if (valid != 0) {
+    //See: https://github.com/mstorsjo/fdk-aac/blob/95858d7bd36f19bde4a9595e2bd68f195215b164/libAACdec/include/aacdecoder_lib.h#L1014
+    MEMBRANE_WARN(env, "AAC: aacDecoder_Fill() left %d bytes in input buffer\n", valid);
+  }
 
   res = fill_result_ok(env);
   return res;
