@@ -7,7 +7,8 @@ defmodule Membrane.Element.AAC.MixProject do
   def project do
     [
       app: :membrane_element_aac,
-      compilers: [:unifex, :bundlex] ++ Mix.compilers, # add unifex and bundlex to compilers
+      # add unifex and bundlex to compilers
+      compilers: [:unifex, :bundlex] ++ Mix.compilers(),
       version: @version,
       elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -53,11 +54,12 @@ defmodule Membrane.Element.AAC.MixProject do
 
   defp deps do
     [
-      {:membrane_core, "~> 0.2.0"},
+      {:membrane_core, "~> 0.2.2"},
+      {:membrane_common_c, "~> 0.2.1"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false},
-      {:unifex, "~> 0.1"},
-      {:membrane_caps_audio_raw, "~> 0.1.5"}
+      {:unifex, "~> 0.2.3"},
+      {:membrane_caps_audio_raw, "~> 0.1.6"}
     ]
   end
 end

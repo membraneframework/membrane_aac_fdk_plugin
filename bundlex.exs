@@ -10,7 +10,7 @@ defmodule Membrane.Element.AAC.BundlexProject do
   def nifs(_platform) do
     [
       decoder: [
-        deps: [unifex: :unifex],
+        deps: [membrane_common_c: :membrane, unifex: :unifex],
         sources: ["_generated/decoder.c", "decoder.c"],
         libs: ["fdk-aac"]
       ]

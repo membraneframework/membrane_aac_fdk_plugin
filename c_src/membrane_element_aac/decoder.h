@@ -1,6 +1,9 @@
 #pragma once
 
 #include <fdk-aac/aacdecoder_lib.h>
+#include <membrane/membrane.h>
+#define MEMBRANE_LOG_TAG "Membrane.Element.AAC.DecoderNative"
+#include <membrane/log.h>
 #include "stdint.h"
 
 typedef struct _DecoderState UnifexNifState;

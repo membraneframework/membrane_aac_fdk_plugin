@@ -9,6 +9,7 @@ UNIFEX_TERM create(UnifexEnv *env) {
   state->handle = aacDecoder_Open(TT_MP4_ADTS, 1);
 
   if (!state->handle) {
+    MEMBRANE_WARN(env, "AAC: Could not initialize decoder\n");
     return create_result_error_unknown(env);
   }
 
@@ -35,6 +36,7 @@ UNIFEX_TERM decode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
       &in_payload->size,
       &valid);
   if (err != AAC_DEC_OK) {
+    MEMBRANE_WARN(env, "AAC: aacDecoder_Fill() failed: %x\n", err);
     return decode_frame_result_error_invalid_data(env);
   }
 
@@ -44,11 +46,11 @@ UNIFEX_TERM decode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
       state->decoder_buffer_size / sizeof(INT_PCM),
       0);
   if (err == AAC_DEC_NOT_ENOUGH_BITS) {
-    printf("NOT ENOUGH BITS\n");
+    MEMBRANE_WARN(env, "AAC: aacDecoder_DecodeFrame() - not enough bits supplied");
     return decode_frame_result_error_unknown(env);
   }
   if (err != AAC_DEC_OK) {
-    printf("UNDEFINED ERROR %x\n", err);
+    MEMBRANE_WARN(env, "AAC: aacDecoder_DecodeFrame() failed: %x\n", err);
     return decode_frame_result_error_unknown(env);
   }
 
