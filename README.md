@@ -21,8 +21,9 @@ end
 This package depends on [FDK-AAC](https://github.com/mstorsjo/fdk-aac) library.
 
 ### Ubuntu
+(Make sure you have Multiverse repository enabled. See: https://help.ubuntu.com/community/Repositories/Ubuntu)
 ```
-sudo apt-get install fdk-aac
+sudo apt-get install libfdk-aac-dev
 ```
 
 ### Arch/Manjaro
