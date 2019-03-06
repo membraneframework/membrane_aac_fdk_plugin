@@ -4,9 +4,9 @@ This package provides elements that can be used ...
 
 It is part of [Membrane Multimedia Framework](https://membraneframework.org).
 
-## Installation
+The docs can be found at [HexDocs](https://hexdocs.pm/membrane_element_aac).
 
-This package depends on [FDK-AAC](https://github.com/mstorsjo/fdk-aac) library.
+## Installation
 
 The package can be installed by adding `membrane_element_aac` to your list of dependencies in `mix.exs`:
 
@@ -18,7 +18,22 @@ def deps do
 end
 ```
 
-The docs can be found at [HexDocs](https://hexdocs.pm/membrane_element_aac).
+This package depends on [FDK-AAC](https://github.com/mstorsjo/fdk-aac) library.
+
+### Ubuntu
+```
+sudo apt-get install fdk-aac
+```
+
+### Arch/Manjaro
+```
+pacman -S libfdk-aac
+```
+
+### MacOS
+```
+brew install fdk-aac
+```
 
 ## Copyright and License
 

@@ -6,7 +6,7 @@ spec create() :: {:ok :: label, state}
 
 spec get_metadata(state) :: {:ok, {frame_size :: long, sample_rate :: long, channels :: int}}
 
-spec fill(payload, state) :: {:ok :: label}
+spec fill(payload, state) :: (:ok :: label)
   | {:error :: label, :invalid_data :: label}
 
 spec decode_frame(payload, state) :: {:ok :: label, payload}

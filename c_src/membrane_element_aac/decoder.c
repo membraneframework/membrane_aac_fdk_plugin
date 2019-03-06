@@ -144,12 +144,8 @@ UNIFEX_TERM decode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
 }
 
 void handle_destroy_state(UnifexEnv *env, State *state) {
-  if (state) {
-    if (state->handle) {
-      aacDecoder_Close(state->handle);
-    }
-    unifex_free(state->decoder_buffer);
-  } else {
-    MEMBRANE_WARN(env, "AAC: Decoder state already released");
+  if (state->handle) {
+    aacDecoder_Close(state->handle);
   }
+  unifex_free(state->decoder_buffer);
 }
