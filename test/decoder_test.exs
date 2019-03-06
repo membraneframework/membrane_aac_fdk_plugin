@@ -1,13 +1,13 @@
 defmodule DecoderTest do
   use ExUnit.Case
 
+  import Membrane.Testing.Pipeline.Assertions
+
   alias Membrane.Pipeline
 
   def make_pipeline(in_path, out_path) do
-    Pipeline.start_link(
-      DecodingPipeline,
-      %{in: in_path, out: out_path, pid: self()},
-      []
+    Membrane.Testing.Pipeline.start_link(
+      DecodingPipeline.get_options(%{in: in_path, out: out_path, pid: self()})
     )
   end
 
@@ -32,7 +32,7 @@ defmodule DecoderTest do
       assert {:ok, pid} = make_pipeline(in_path, out_path)
 
       assert Pipeline.play(pid) == :ok
-      assert_receive :eos, 500
+      assert_receive_message({:handle_notification, {{:end_of_stream, :input}, :sink}}, 500)
       assert_files_equal(out_path, reference_path)
     end
   end
