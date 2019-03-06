@@ -60,7 +60,8 @@ defmodule Membrane.Element.AAC.MixProject do
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false},
       {:unifex, "~> 0.2.3"},
-      {:membrane_caps_audio_raw, "~> 0.1.6"}
+      {:membrane_caps_audio_raw, "~> 0.1.6"},
+      {:membrane_element_file, "~> 0.2.2", only: [:dev, :test]}
     ]
   end
 end
