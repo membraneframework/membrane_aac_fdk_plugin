@@ -1,6 +1,7 @@
 defmodule DecoderTest do
-  alias Membrane.Pipeline
   use ExUnit.Case
+
+  alias Membrane.Pipeline
 
   def make_pipeline(in_path, out_path) do
     Pipeline.start_link(
