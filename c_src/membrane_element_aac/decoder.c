@@ -144,6 +144,7 @@ UNIFEX_TERM decode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
 }
 
 void handle_destroy_state(UnifexEnv *env, State *state) {
+  UNIFEX_UNUSED(env);
   if (state->handle) {
     aacDecoder_Close(state->handle);
   }
