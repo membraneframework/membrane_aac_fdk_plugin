@@ -1,4 +1,8 @@
 defmodule Membrane.Element.AAC.Decoder do
+  @moduledoc """
+  Element for decoding AAC audio to raw data in S16LE format.
+  """
+
   use Membrane.Element.Base.Filter
   alias __MODULE__.Native
   alias Membrane.Buffer
