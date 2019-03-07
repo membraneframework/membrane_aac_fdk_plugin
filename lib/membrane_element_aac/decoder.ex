@@ -78,9 +78,7 @@ defmodule Membrane.Element.AAC.Decoder do
     end
   end
 
-  defp decode_buffer(payload, native, acc \\ [])
-
-  defp decode_buffer(payload, native, acc) do
+  defp decode_buffer(payload, native, acc \\ []) do
     case Native.decode_frame(payload, native) do
       {:ok, decoded_frame} ->
         # Accumulate decoded frames
