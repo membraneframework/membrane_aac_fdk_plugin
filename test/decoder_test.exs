@@ -32,7 +32,7 @@ defmodule DecoderTest do
       assert {:ok, pid} = make_pipeline(in_path, out_path)
 
       assert Pipeline.play(pid) == :ok
-      assert_receive_message({:handle_notification, {{:end_of_stream, :input}, :sink}}, 500)
+      assert_receive_message({:handle_notification, {{:end_of_stream, :input}, :sink}}, 3000)
       assert_files_equal(out_path, reference_path)
     end
   end
