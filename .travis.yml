@@ -1,0 +1,17 @@
+language: elixir
+elixir:
+  - 1.7
+  - 1.8
+otp_release:
+  - 21.0
+sudo: false
+
+before_install:
+## Enable Ubuntu Multiverse where fdk-aac library is available.
+- sudo sed -i 's/^#\s*\(deb.*multiverse\)$/\1/g' /etc/apt/sources.list
+- sudo apt-get update -qq
+- sudo apt-get install -q -y libfdk-aac-dev
+
+script:
+  - mix format --check-formatted
+  - mix test
