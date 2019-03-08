@@ -5,12 +5,6 @@ defmodule DecoderTest do
 
   alias Membrane.Pipeline
 
-  def make_pipeline(in_path, out_path) do
-    Membrane.Testing.Pipeline.start_link(
-      DecodingPipeline.get_options(%{in: in_path, out: out_path, pid: self()})
-    )
-  end
-
   def assert_files_equal(file_a, file_b) do
     assert {:ok, a} = File.read(file_a)
     assert {:ok, b} = File.read(file_b)
@@ -29,7 +23,7 @@ defmodule DecoderTest do
   describe "Decoding Pipeline should" do
     test "Decode AAC file" do
       {in_path, reference_path, out_path} = prepare_paths("sample")
-      assert {:ok, pid} = make_pipeline(in_path, out_path)
+      assert {:ok, pid} = DecodingPipeline.make_pipeline(in_path, out_path)
 
       assert Pipeline.play(pid) == :ok
       assert_receive_message({:handle_notification, {{:end_of_stream, :input}, :sink}}, 3000)

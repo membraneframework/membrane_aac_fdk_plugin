@@ -1,8 +1,10 @@
 defmodule DecodingPipeline do
   @moduledoc false
 
-  def get_options(%{in: in_path, out: out_path, pid: pid}) do
-    %Membrane.Testing.Pipeline.Options{
+  alias Membrane.Testing.Pipeline
+
+  def make_pipeline(in_path, out_path, pid \\ self()) do
+    Pipeline.start_link(%Pipeline.Options{
       elements: [
         file_src: %Membrane.Element.File.Source{location: in_path},
         decoder: Membrane.Element.AAC.Decoder,
@@ -10,6 +12,6 @@ defmodule DecodingPipeline do
       ],
       monitored_callbacks: [:handle_notification],
       test_process: pid
-    }
+    })
   end
 end
