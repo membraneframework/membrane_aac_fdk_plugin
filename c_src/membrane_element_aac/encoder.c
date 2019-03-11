@@ -45,6 +45,8 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot) {
 
   AACENC_ERROR err;
   CHANNEL_MODE channel_mode;
+  AACENC_InfoStruct info = {0};
+  int sce = 0, cpe = 0;
 
   // Initialize AAC Encoder handle
   err = aacEncOpen(&state->handle, 0, channels);
@@ -67,13 +69,24 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot) {
     return create_result_error(env, get_error_message(err));
   }
 
+  // Set transport type
+  err = aacEncoder_SetParam(state->handle, AACENC_TRANSMUX, TT_MP4_ADTS);
+  if (err != AACENC_OK) {
+    MEMBRANE_WARN(env, "AAC: Unable to set transport type: %x\n", err);
+    return create_result_error(env, get_error_message(err));
+  }
+
   // Set channels configuration
   switch (channels) {
     case 1:
       channel_mode = MODE_1;
+      sce = 1;
+      cpe = 0;
       break;
     case 2:
       channel_mode = MODE_2;
+      sce = 0;
+      cpe = 1;
       break;
     default:
       MEMBRANE_WARN(env, "AAC: Unsupported number of channels: %d", channels);
@@ -91,17 +104,38 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot) {
     return create_result_error(env, get_error_message(err));
   }
 
+  // Set bitrate
+  int bitrate = (96 * sce + 128 * cpe) * sample_rate / 44;
+  printf("SAMPLE RATE: %d\n", sample_rate);
+  printf("CALCULATED BITRATE: %d\n", bitrate);
+  err = aacEncoder_SetParam(state->handle, AACENC_BITRATE, bitrate);
+  if (err != AACENC_OK) {
+    MEMBRANE_WARN(env, "AAC: Unable to set bitrate: %x\n", err);
+    return create_result_error(env, get_error_message(err));
+  }
+
   state->aac_buffer = unifex_alloc(MAX_AAC_BUFFER_SIZE);
   if (!state->aac_buffer) {
     MEMBRANE_WARN(env, "AAC: Unable to initialize AAC buffer\n", err);
     return create_result_error(env, "no_memory");
   }
 
+  // Initialize the encoder with preset parameters
   err = aacEncEncode(state->handle, NULL, NULL, NULL, NULL);
   if (err != AACENC_OK) {
     MEMBRANE_WARN(env, "AAC: Unable to initialize the encoder: %x\n", err);
     return create_result_error(env, get_error_message(err));
   }
+
+  err = aacEncInfo(state->handle, &info);
+  if (err != AACENC_OK) {
+    MEMBRANE_WARN(env, "AAC: Unable to get encoder info: %x\n", err);
+    return create_result_error(env, get_error_message(err));
+  }
+
+  state->frame_size = info.frameLength;
+
+  printf("FRAME SIZE: %d\n", info.frameLength);
 
   UNIFEX_TERM res = create_result_ok(env, state);
   unifex_release_state(env, state);
@@ -119,8 +153,7 @@ UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
   int in_buffer_size, in_buffer_element_size;
   int out_buffer_identifier = OUT_BITSTREAM_DATA;
   int out_buffer_size, out_buffer_element_size;
-  void *in_ptr;
-  void *out_ptr;
+  void *in_ptr, *out_ptr;
   uint8_t dummy_buf[1];
 
   /* Handle :end_of_stream and flush */
@@ -130,10 +163,15 @@ UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
 
     in_args.numInSamples = -1;
   } else {
+    printf("PAYLOAD with data: %d\n", in_payload->size);
     int number_of_samples = in_payload->size / (state->channels * SAMPLE_SIZE);
+    printf("Number of samples: %d\n", number_of_samples);
 
-    in_ptr = in_payload->data[0];
+    in_ptr = in_payload->data;
     in_buffer_size = 2 * state->channels * number_of_samples;
+
+    in_args.numInSamples = state->channels * number_of_samples;
+    printf("in_buffer_size: %d\n", in_buffer_size);
   }
 
   in_buffer_element_size = 2;
@@ -143,8 +181,8 @@ UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
   in_buf.bufSizes = &in_buffer_size;
   in_buf.bufElSizes = &in_buffer_element_size;
 
-  out_ptr = state->aac_buffer[0];
-  out_buffer_size = in_payload->size;
+  out_ptr = state->aac_buffer;
+  out_buffer_size = MAX_AAC_BUFFER_SIZE;
   out_buffer_element_size = 1;
   out_buf.numBufs = 1;
   out_buf.bufs = &out_ptr;
@@ -154,12 +192,17 @@ UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
 
   err = aacEncEncode(state->handle, &in_buf, &out_buf, &in_args, &out_args);
   if (err != AACENC_OK) {
+    MEMBRANE_WARN(env, "AAC: Encode error: %x\n", err);
+    printf("AAC: Encode error: %x\n", err);
+    return encode_frame_result_error(env, get_error_message(err));
   }
+  printf("encoded frame: %d\n", err);
+  printf("numOutBytes: %d\n", out_args.numOutBytes);
 
   UnifexPayload *out_payload = unifex_payload_alloc(env, UNIFEX_PAYLOAD_BINARY, out_buffer_size);
   memcpy(out_payload->data, state->aac_buffer, out_buffer_size);
-  unifex_payload_release(out_payload);
   res = encode_frame_result_ok(env, out_payload);
+  unifex_payload_release_ptr(&out_payload);
   return res;
 }
 
@@ -168,4 +211,5 @@ void handle_destroy_state(UnifexEnv *env, State *state) {
   if (state->handle) {
     aacEncClose(&state->handle);
   }
+  unifex_free(state->aac_buffer);
 }
