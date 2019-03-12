@@ -68,7 +68,8 @@ defmodule Membrane.Element.AAC.Encoder do
     %{native: native} = state
 
     with {:ok, encoded_frame} <- Native.encode_frame(data, native) do
-      {{:ok, buffer: {:output, %Buffer{payload: encoded_frame}}}, state}
+      buffer_actions = [buffer: {:output, %Buffer{payload: encoded_frame}}]
+      {{:ok, buffer_actions ++ [redemand: :output]}, state}
     else
       {:error, reason} -> {{:error, reason}, state}
     end
