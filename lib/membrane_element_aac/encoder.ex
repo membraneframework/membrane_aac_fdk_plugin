@@ -21,7 +21,7 @@ defmodule Membrane.Element.AAC.Encoder do
 
   def_input_pads input: [
                    demand_unit: :bytes,
-                   caps: {Raw, format: :s32le, sample_rate: @sample_rate, channels: @channels}
+                   caps: {Raw, format: :s16le, sample_rate: @sample_rate, channels: @channels}
                  ]
 
   @impl true

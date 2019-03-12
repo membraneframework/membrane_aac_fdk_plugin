@@ -1,6 +1,6 @@
 #include "encoder.h"
 
-static const int SAMPLE_SIZE = 4;
+static const int SAMPLE_SIZE = 2;
 static const MAX_AAC_BUFFER_SIZE = 8192;  // TODO: Validate
 
 /**
@@ -158,6 +158,7 @@ UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
 
   /* Handle :end_of_stream and flush */
   if (!in_payload->data) {
+    printf("PAYLOAD flush");
     in_ptr = dummy_buf;
     in_buffer_size = 0;
 
@@ -168,13 +169,13 @@ UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
     printf("Number of samples: %d\n", number_of_samples);
 
     in_ptr = in_payload->data;
-    in_buffer_size = 2 * state->channels * number_of_samples;
+    in_buffer_size = SAMPLE_SIZE * state->channels * number_of_samples;
 
     in_args.numInSamples = state->channels * number_of_samples;
     printf("in_buffer_size: %d\n", in_buffer_size);
   }
 
-  in_buffer_element_size = 2;
+  in_buffer_element_size = SAMPLE_SIZE;
   in_buf.numBufs = 1;
   in_buf.bufs = &in_ptr;
   in_buf.bufferIdentifiers = &in_buffer_identifier;
