@@ -79,7 +79,7 @@ defmodule Membrane.Element.AAC.Encoder do
   def handle_event(:input, %EndOfStream{}, _ctx, state) do
     %{native: native} = state
 
-    with {:ok, encoded_frame} <- Native.encode_frame(nil, native) do
+    with {:ok, encoded_frame} <- Native.encode_frame(<<>>, native) do
       buffer_actions = [buffer: {:output, %Buffer{payload: encoded_frame}}]
       actions = [event: {:output, %EndOfStream{}}, notify: {:end_of_stream, :input}]
       {{:ok, buffer_actions ++ actions}, state}
