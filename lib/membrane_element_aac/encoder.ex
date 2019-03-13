@@ -10,7 +10,8 @@ defmodule Membrane.Element.AAC.Encoder do
   alias Membrane.Event.EndOfStream
 
   @channels 2
-  @sample_rate 44_100
+  @sample_size 2
+  @default_sample_rate 44_100
   @aac_frame_size 1024
   # TODO: 2 is for AAC LC, Add handling different AOTs
   @audio_object_type 2
@@ -21,12 +22,18 @@ defmodule Membrane.Element.AAC.Encoder do
 
   def_input_pads input: [
                    demand_unit: :bytes,
-                   caps: {Raw, format: :s16le, sample_rate: @sample_rate, channels: @channels}
+                   caps:
+                     {Raw, format: :s16le, sample_rate: @default_sample_rate, channels: @channels}
                  ]
 
   @impl true
-  def handle_init(_) do
-    {:ok, %{native: nil}}
+  def handle_init(options) do
+    {:ok,
+     %{
+       native: nil,
+       options: options,
+       queue: <<>>
+     }}
   end
 
   @impl true
@@ -34,7 +41,7 @@ defmodule Membrane.Element.AAC.Encoder do
     with {:ok, native} <-
            Native.create(
              @channels,
-             @sample_rate,
+             @default_sample_rate,
              @audio_object_type
            ) do
       {:ok, %{state | native: native}}
@@ -65,12 +72,19 @@ defmodule Membrane.Element.AAC.Encoder do
 
   @impl true
   def handle_process(:input, %Buffer{payload: data}, _ctx, state) do
-    %{native: native} = state
+    %{native: native, queue: queue} = state
 
-    with {:ok, encoded_frame} <- Native.encode_frame(data, native) do
-      buffer_actions = [buffer: {:output, %Buffer{payload: encoded_frame}}]
-      {{:ok, buffer_actions ++ [redemand: :output]}, state}
+    to_encode = queue <> data
+
+    with {:ok, {encoded_buffers, bytes_used}} when bytes_used > 0 <-
+           encode_buffer(to_encode, native) do
+      <<_handled::binary-size(bytes_used), rest::binary>> = to_encode
+
+      buffer_actions = [buffer: {:output, encoded_buffers}]
+
+      {{:ok, buffer_actions ++ [redemand: :output]}, %{state | queue: rest}}
     else
+      {:ok, {[], 0}} -> {:ok, %{state | queue: to_encode}}
       {:error, reason} -> {{:error, reason}, state}
     end
   end
@@ -79,11 +93,17 @@ defmodule Membrane.Element.AAC.Encoder do
   def handle_event(:input, %EndOfStream{}, _ctx, state) do
     %{native: native} = state
 
+    # TODO: Is it possible for state.queue to still contain data here?
+
     with {:ok, encoded_frame} <- Native.encode_frame(<<>>, native) do
       buffer_actions = [buffer: {:output, %Buffer{payload: encoded_frame}}]
       actions = [event: {:output, %EndOfStream{}}, notify: {:end_of_stream, :input}]
+
       {{:ok, buffer_actions ++ actions}, state}
     else
+      {:error, :no_data} ->
+        {:ok, state}
+
       {:error, reason} ->
         {{:error, reason}, state}
     end
@@ -91,5 +111,39 @@ defmodule Membrane.Element.AAC.Encoder do
 
   def handle_event(pad, event, ctx, state) do
     super(pad, event, ctx, state)
+  end
+
+  # Initialize buffer encoding
+  defp encode_buffer(buffer, native) do
+    raw_frame_size = @aac_frame_size * @channels * @sample_size
+
+    encode_buffer(buffer, native, [], 0, raw_frame_size)
+  end
+
+  # Encode a single frame if buffer contains at least one frame
+  defp encode_buffer(buffer, native, acc, bytes_used, raw_frame_size)
+       when byte_size(buffer) >= raw_frame_size do
+    <<raw_frame::binary-size(raw_frame_size), rest::binary>> = buffer
+
+    with {:ok, encoded_frame} <- Native.encode_frame(raw_frame, native) do
+      encoded_buffer = %Buffer{payload: encoded_frame}
+
+      # Continue encoding the rest until no more frames are available in the queue
+      encode_buffer(
+        rest,
+        native,
+        [encoded_buffer | acc],
+        bytes_used + raw_frame_size,
+        raw_frame_size
+      )
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  # Not enough samples for a frame
+  defp encode_buffer(_native, _partial_buffer, acc, bytes_used, _raw_frame_size) do
+    # Return accumulated encoded frames
+    {:ok, {acc |> Enum.reverse(), bytes_used}}
   end
 end
