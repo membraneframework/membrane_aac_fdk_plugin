@@ -9,7 +9,6 @@ typedef struct _EncoderState {
   HANDLE_AACENCODER handle;
   unsigned char *aac_buffer;
   int channels;
-  int frame_size;
 } UnifexNifState;
 
 typedef UnifexNifState State;

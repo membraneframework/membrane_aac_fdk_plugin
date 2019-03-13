@@ -106,8 +106,6 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot) {
 
   // Set bitrate
   int bitrate = (96 * sce + 128 * cpe) * sample_rate / 44;
-  printf("SAMPLE RATE: %d\n", sample_rate);
-  printf("CALCULATED BITRATE: %d\n", bitrate);
   err = aacEncoder_SetParam(state->handle, AACENC_BITRATE, bitrate);
   if (err != AACENC_OK) {
     MEMBRANE_WARN(env, "AAC: Unable to set bitrate: %x\n", err);
@@ -126,16 +124,6 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot) {
     MEMBRANE_WARN(env, "AAC: Unable to initialize the encoder: %x\n", err);
     return create_result_error(env, get_error_message(err));
   }
-
-  err = aacEncInfo(state->handle, &info);
-  if (err != AACENC_OK) {
-    MEMBRANE_WARN(env, "AAC: Unable to get encoder info: %x\n", err);
-    return create_result_error(env, get_error_message(err));
-  }
-
-  state->frame_size = info.frameLength;
-
-  printf("FRAME SIZE: %d\n", info.frameLength);
 
   UNIFEX_TERM res = create_result_ok(env, state);
   unifex_release_state(env, state);
@@ -157,22 +145,18 @@ UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
   uint8_t dummy_buf[1];
 
   /* Handle :end_of_stream and flush */
-  if (!in_payload->data) {
-    printf("PAYLOAD flush");
+  if (!in_payload->size) {
     in_ptr = dummy_buf;
     in_buffer_size = 0;
 
     in_args.numInSamples = -1;
   } else {
-    printf("PAYLOAD with data: %d\n", in_payload->size);
     int number_of_samples = in_payload->size / (state->channels * SAMPLE_SIZE);
-    printf("Number of samples: %d\n", number_of_samples);
 
     in_ptr = in_payload->data;
     in_buffer_size = SAMPLE_SIZE * state->channels * number_of_samples;
 
     in_args.numInSamples = state->channels * number_of_samples;
-    printf("in_buffer_size: %d\n", in_buffer_size);
   }
 
   in_buffer_element_size = SAMPLE_SIZE;
@@ -194,11 +178,12 @@ UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
   err = aacEncEncode(state->handle, &in_buf, &out_buf, &in_args, &out_args);
   if (err != AACENC_OK) {
     MEMBRANE_WARN(env, "AAC: Encode error: %x\n", err);
-    printf("AAC: Encode error: %x\n", err);
     return encode_frame_result_error(env, get_error_message(err));
   }
-  printf("encoded frame: %d\n", err);
-  printf("numOutBytes: %d\n", out_args.numOutBytes);
+
+  if (!out_args.numOutBytes) {
+    return encode_frame_result_error_no_data(env);
+  }
 
   UnifexPayload *out_payload = unifex_payload_alloc(env, UNIFEX_PAYLOAD_BINARY, out_buffer_size);
   memcpy(out_payload->data, state->aac_buffer, out_buffer_size);

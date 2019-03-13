@@ -17,3 +17,4 @@ spec create(
 
 spec encode_frame(payload, state) :: {:ok :: label, payload}
   | {:error :: label, reason :: atom}
+  | {:error :: label, :no_data :: label}
