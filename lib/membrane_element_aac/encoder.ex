@@ -9,6 +9,8 @@ defmodule Membrane.Element.AAC.Encoder do
   alias Membrane.Caps.Audio.Raw
   alias Membrane.Event.EndOfStream
 
+  use Membrane.Log, tags: :membrane_element_aac
+
   @channels 2
   @sample_size 2
   @default_sample_rate 44_100
@@ -91,18 +93,20 @@ defmodule Membrane.Element.AAC.Encoder do
 
   @impl true
   def handle_event(:input, %EndOfStream{}, _ctx, state) do
-    %{native: native} = state
+    %{native: native, queue: queue} = state
 
-    # TODO: Is it possible for state.queue to still contain data here?
+    if queue != <<>>,
+      do: warn("Processing queue is not empty, but EndOfStream event was received")
+
+    actions = [event: {:output, %EndOfStream{}}, notify: {:end_of_stream, :input}]
 
     with {:ok, encoded_frame} <- Native.encode_frame(<<>>, native) do
       buffer_actions = [buffer: {:output, %Buffer{payload: encoded_frame}}]
-      actions = [event: {:output, %EndOfStream{}}, notify: {:end_of_stream, :input}]
 
       {{:ok, buffer_actions ++ actions}, state}
     else
       {:error, :no_data} ->
-        {:ok, state}
+        {{:ok, actions}, state}
 
       {:error, reason} ->
         {{:error, reason}, state}
