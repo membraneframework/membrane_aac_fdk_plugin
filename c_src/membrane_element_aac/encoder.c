@@ -8,6 +8,9 @@ static const MAX_AAC_BUFFER_SIZE = 8192;  // TODO: Validate
  * Heavily inspired by https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libfdk-aacenc.c
  */
 
+/**
+ * Returns a string description for the error code.
+ */
 char *get_error_message(AACENC_ERROR err) {
   switch (err) {
     case AACENC_OK:
@@ -39,6 +42,13 @@ char *get_error_message(AACENC_ERROR err) {
   }
 }
 
+/**
+ * Initializes AAC Encoder and returns State resource.
+ * 
+ * On success, returns {:ok, encoder_state}
+ * In case of error, returns:
+ * - {:error, reason}
+ */
 UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot) {
   State *state = unifex_alloc_state(env);
   state->channels = channels;
@@ -131,6 +141,19 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot) {
   return res;
 }
 
+/**
+ * Encodes one input frame.
+ * 
+ * Expects:
+ * - Buffer to encoder
+ * - Native resource
+ * as arguments
+ * 
+ * Returns on of:
+ * - {:ok, {encoded_frame}} - Encoded AAC frame
+ * - {:error, :no_data} - When supplied input buffer does not contain enough data to encode a single frame
+ * - {:error, reason} - When native encoding failed
+ */
 UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state) {
   UNIFEX_TERM res;
   AACENC_ERROR err;
