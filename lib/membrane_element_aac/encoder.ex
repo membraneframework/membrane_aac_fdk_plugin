@@ -15,8 +15,22 @@ defmodule Membrane.Element.AAC.Encoder do
   @sample_size 2
   @default_sample_rate 44_100
   @aac_frame_size 1024
-  # TODO: 2 is for AAC LC, Add handling different AOTs
-  @audio_object_type 2
+  @default_audio_object_type 2
+
+  def_options aot: [
+                description: """
+                Audio object type. See: https://github.com/mstorsjo/fdk-aac/blob/master/libAACenc/include/aacenc_lib.h#L1280
+                2: MPEG-4 AAC Low Complexity.
+                5: MPEG-4 AAC Low Complexity with Spectral Band Replication (HE-AAC).
+                29: MPEG-4 AAC Low Complexity with Spectral Band Replication and Parametric Stereo (HE-AAC v2). This configuration can be used only with stereo input audio data.
+                23: MPEG-4 AAC Low-Delay.
+                39: MPEG-4 AAC Enhanced Low-Delay.
+                129: MPEG-2 AAC Low Complexity.
+                132: MPEG-2 AAC Low Complexity with Spectral Band Replication (HE-AAC).
+                """,
+                type: :int,
+                default: @default_audio_object_type
+              ]
 
   def_output_pads output: [
                     caps: :any
@@ -40,11 +54,12 @@ defmodule Membrane.Element.AAC.Encoder do
 
   @impl true
   def handle_stopped_to_prepared(_ctx, state) do
-    with {:ok, native} <-
+    with {:ok, aot} <- validate_aot(state.options.aot),
+         {:ok, native} <-
            Native.create(
              @channels,
              @default_sample_rate,
-             @audio_object_type
+             aot
            ) do
       {:ok, %{state | native: native}}
     else
@@ -150,4 +165,7 @@ defmodule Membrane.Element.AAC.Encoder do
     # Return accumulated encoded frames
     {:ok, {acc |> Enum.reverse(), bytes_used}}
   end
+
+  defp validate_aot(aot) when aot in [2, 5, 29, 23, 39, 129, 132], do: {:ok, aot}
+  defp validate_aot(_), do: {:error, :invalid_aot}
 end
