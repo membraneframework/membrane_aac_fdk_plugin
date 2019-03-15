@@ -55,7 +55,6 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot) {
 
   AACENC_ERROR err;
   CHANNEL_MODE channel_mode;
-  AACENC_InfoStruct info = {0};
   // See: https://wiki.multimedia.cx/index.php/Understanding_AAC#Frames_And_Syntax_Elements
   int sce = 0, cpe = 0;
 
