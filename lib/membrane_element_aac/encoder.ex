@@ -4,18 +4,44 @@ defmodule Membrane.Element.AAC.Encoder do
   """
 
   use Membrane.Element.Base.Filter
+  use Bunch.Typespec
   alias __MODULE__.Native
   alias Membrane.Buffer
   alias Membrane.Caps.Audio.Raw
+  alias Membrane.Caps.Matcher
   alias Membrane.Event.EndOfStream
 
   use Membrane.Log, tags: :membrane_element_aac
 
-  @channels 2
-  @sample_size 2
-  @default_sample_rate 44_100
+  # AAC Constants
   @aac_frame_size 1024
+  @sample_size 2
+
+  @default_channels 2
+  @default_sample_rate 44_100
+  # MPEG-4 AAC Low Complexity
   @default_audio_object_type 2
+  @list_type allowed_channels :: [1, 2]
+  @list_type allowed_aots :: [2, 5, 29, 23, 39, 129, 132]
+  @list_type allowed_sample_rates :: [
+               96000,
+               88200,
+               64000,
+               48000,
+               44100,
+               32000,
+               24000,
+               22050,
+               16000,
+               12000,
+               11025,
+               8000
+             ]
+
+  @supported_caps {Raw,
+                   format: :s16le,
+                   channels: Matcher.one_of(@allowed_channels),
+                   sample_rate: Matcher.one_of(@allowed_sample_rates)}
 
   def_options aot: [
                 description: """
@@ -28,8 +54,18 @@ defmodule Membrane.Element.AAC.Encoder do
                 129: MPEG-2 AAC Low Complexity.
                 132: MPEG-2 AAC Low Complexity with Spectral Band Replication (HE-AAC).
                 """,
-                type: :int,
+                type: :integer,
+                spec: allowed_aots(),
                 default: @default_audio_object_type
+              ],
+              input_caps: [
+                description: """
+                Caps for the input pad. If set to nil (default value),
+                default values will be applied.
+                """,
+                type: :caps,
+                spec: Raw.t() | nil,
+                default: nil
               ]
 
   def_output_pads output: [
@@ -38,29 +74,38 @@ defmodule Membrane.Element.AAC.Encoder do
 
   def_input_pads input: [
                    demand_unit: :bytes,
-                   caps:
-                     {Raw, format: :s16le, sample_rate: @default_sample_rate, channels: @channels}
+                   caps: @supported_caps
                  ]
 
   @impl true
   def handle_init(options) do
+    input_caps =
+      Map.merge(
+        %Raw{format: :s16le, channels: @default_channels, sample_rate: @default_sample_rate},
+        options.input_caps || %{}
+      )
+
     {:ok,
      %{
        native: nil,
-       options: options,
+       options: %{options | input_caps: input_caps},
        queue: <<>>
      }}
   end
 
   @impl true
   def handle_stopped_to_prepared(_ctx, state) do
-    with {:ok, aot} <- validate_aot(state.options.aot),
-         {:ok, native} <-
-           Native.create(
-             @channels,
-             @default_sample_rate,
-             aot
-           ) do
+    %{
+      options: %{
+        aot: aot,
+        input_caps: %{
+          channels: channels,
+          sample_rate: sample_rate
+        }
+      }
+    } = state
+
+    with {:ok, native} <- mk_native(channels, sample_rate, aot) do
       {:ok, %{state | native: native}}
     else
       {:error, reason} -> {{:error, reason}, state}
@@ -134,7 +179,7 @@ defmodule Membrane.Element.AAC.Encoder do
 
   # Initialize buffer encoding
   defp encode_buffer(buffer, native) do
-    raw_frame_size = @aac_frame_size * @channels * @sample_size
+    raw_frame_size = @aac_frame_size * @default_channels * @sample_size
 
     encode_buffer(buffer, native, [], 0, raw_frame_size)
   end
@@ -166,6 +211,32 @@ defmodule Membrane.Element.AAC.Encoder do
     {:ok, {acc |> Enum.reverse(), bytes_used}}
   end
 
-  defp validate_aot(aot) when aot in [2, 5, 29, 23, 39, 129, 132], do: {:ok, aot}
+  defp mk_native(channels, sample_rate, aot) do
+    with {:ok, channels} <- validate_channels(channels),
+         {:ok, sample_rate} <- validate_sample_rate(sample_rate),
+         {:ok, aot} <- validate_aot(aot),
+         {:ok, native} <-
+           Native.create(
+             channels,
+             sample_rate,
+             aot
+           ) do
+      {:ok, native}
+    else
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  # Options validators
+
+  defp validate_aot(aot) when aot in @allowed_aots, do: {:ok, aot}
   defp validate_aot(_), do: {:error, :invalid_aot}
+
+  defp validate_channels(channels) when channels in @allowed_channels, do: {:ok, channels}
+  defp validate_channels(_), do: {:error, :invalid_channels}
+
+  defp validate_sample_rate(sample_rate) when sample_rate in @allowed_sample_rates,
+    do: {:ok, sample_rate}
+
+  defp validate_sample_rate(_), do: {:error, :invalid_sample_rate}
 end
