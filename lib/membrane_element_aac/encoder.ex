@@ -61,7 +61,8 @@ defmodule Membrane.Element.AAC.Encoder do
               input_caps: [
                 description: """
                 Caps for the input pad. If set to nil (default value),
-                default values will be applied.
+                caps are assumed to be received through the pad. If explicitly set to some
+                caps, they cannot be changed by caps received through the pad.
                 """,
                 type: :caps,
                 spec: Raw.t() | nil,
@@ -79,33 +80,26 @@ defmodule Membrane.Element.AAC.Encoder do
 
   @impl true
   def handle_init(options) do
-    input_caps =
-      Map.merge(
-        %Raw{format: :s16le, channels: @default_channels, sample_rate: @default_sample_rate},
-        options.input_caps || %{}
-      )
-
     {:ok,
      %{
        native: nil,
-       options: %{options | input_caps: input_caps},
+       options: options,
        queue: <<>>
      }}
   end
 
   @impl true
-  def handle_stopped_to_prepared(_ctx, state) do
-    %{
-      options: %{
-        aot: aot,
-        input_caps: %{
-          channels: channels,
-          sample_rate: sample_rate
-        }
-      }
-    } = state
+  def handle_stopped_to_prepared(_ctx, %{options: %{input_caps: nil}} = state), do: {:ok, state}
 
-    with {:ok, native} <- mk_native(channels, sample_rate, aot) do
+  def handle_stopped_to_prepared(_ctx, state) do
+    input_caps =
+      Map.merge(
+        %Raw{format: :s16le, channels: @default_channels, sample_rate: @default_sample_rate},
+        state.options.input_caps
+      )
+
+    with {:ok, native} <-
+           mk_native(input_caps.channels, input_caps.sample_rate, state.options.aot) do
       {:ok, %{state | native: native}}
     else
       {:error, reason} -> {{:error, reason}, state}
@@ -128,8 +122,20 @@ defmodule Membrane.Element.AAC.Encoder do
   end
 
   @impl true
-  def handle_caps(:input, _caps, _ctx, state) do
-    {:ok, state}
+  def handle_caps(:input, caps, _ctx, %{options: %{input_caps: input_caps}} = state)
+      when input_caps in [nil, caps] do
+    with {:ok, native} <- mk_native(caps.channels, caps.sample_rate, state.options.aot) do
+      {:ok, %{state | native: native}}
+    else
+      {:error, reason} -> {{:error, reason}, state}
+    end
+  end
+
+  def handle_caps(:input, caps, _ctx, %{input_caps: stored_caps}) do
+    raise """
+    Received caps #{inspect(caps)} are different then defined in options #{inspect(stored_caps)}.
+    If you want to allow converter to accept different input caps dynamically, use `nil` as input_caps.
+    """
   end
 
   @impl true
