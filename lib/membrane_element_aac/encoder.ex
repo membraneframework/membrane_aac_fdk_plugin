@@ -133,7 +133,7 @@ defmodule Membrane.Element.AAC.Encoder do
 
   def handle_caps(:input, caps, _ctx, %{input_caps: stored_caps}) do
     raise """
-    Received caps #{inspect(caps)} are different then defined in options #{inspect(stored_caps)}.
+    Received caps #{inspect(caps)} are different than defined in options #{inspect(stored_caps)}.
     If you want to allow converter to accept different input caps dynamically, use `nil` as input_caps.
     """
   end
