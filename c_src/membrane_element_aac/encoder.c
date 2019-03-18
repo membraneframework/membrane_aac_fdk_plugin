@@ -45,11 +45,17 @@ char *get_error_message(AACENC_ERROR err) {
 /**
  * Initializes AAC Encoder and returns State resource.
  * 
+ * Expects:
+ * - channels - Number of channels. For now, only supports either 1 or 2 channels.
+ * - sample_rate - Sample rate.
+ * - aot - Audio Object Type.
+ * - bitrate_mode - 0 for CBR, 1-5 for VBR mode. See: http://wiki.hydrogenaud.io/index.php?title=Fraunhofer_FDK_AAC#Bitrate_Modes
+ * 
  * On success, returns {:ok, encoder_state}
  * In case of error, returns:
  * - {:error, reason}
  */
-UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot) {
+UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot, int bitrate_mode) {
   State *state = unifex_alloc_state(env);
   state->channels = channels;
 
@@ -115,11 +121,25 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot) {
   }
 
   // Set bitrate
-  int bitrate = (96 * sce + 128 * cpe) * sample_rate / 44;
-  err = aacEncoder_SetParam(state->handle, AACENC_BITRATE, bitrate);
-  if (err != AACENC_OK) {
-    MEMBRANE_WARN(env, "AAC: Unable to set bitrate: %x\n", err);
-    return create_result_error(env, get_error_message(err));
+  if (bitrate_mode) {
+    // VBR
+    if (bitrate_mode < 1 || bitrate_mode > 5) {
+      MEMBRANE_WARN(env, "AAC: Unable to set VBR mode: %d. VBR quality should be 1-5\n", bitrate_mode);
+      return create_result_error(env, "invalid_vbr");
+    }
+    err = aacEncoder_SetParam(state->handle, AACENC_BITRATEMODE, bitrate_mode);
+    if (err != AACENC_OK) {
+      MEMBRANE_WARN(env, "AAC: Unable to set VBR %d: %x\n", bitrate_mode, err);
+      return create_result_error(env, get_error_message(err));
+    }
+  } else {
+    // CBR
+    int bitrate = (96 * sce + 128 * cpe) * sample_rate / 44;
+    err = aacEncoder_SetParam(state->handle, AACENC_BITRATE, bitrate);
+    if (err != AACENC_OK) {
+      MEMBRANE_WARN(env, "AAC: Unable to set bitrate: %x\n", err);
+      return create_result_error(env, get_error_message(err));
+    }
   }
 
   state->aac_buffer = unifex_alloc(MAX_AAC_BUFFER_SIZE);

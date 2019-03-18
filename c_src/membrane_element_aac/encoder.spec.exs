@@ -3,7 +3,8 @@ module Membrane.Element.AAC.Encoder.Native
 spec create(
   channels :: int,
   sample_rate :: int,
-  aot :: int
+  aot :: int,
+  bitrate_mode :: int
 ) :: {:ok :: label, state}
   | {:error :: label, reason :: atom}
 

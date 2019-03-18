@@ -37,6 +37,7 @@ defmodule Membrane.Element.AAC.Encoder do
                11025,
                8000
              ]
+  @list_type allowed_bitrate_modes :: [0, 1, 2, 3, 4, 5]
 
   @supported_caps {Raw,
                    format: :s16le,
@@ -57,6 +58,16 @@ defmodule Membrane.Element.AAC.Encoder do
                 type: :integer,
                 spec: allowed_aots(),
                 default: @default_audio_object_type
+              ],
+              bitrate_mode: [
+                description: """
+                Bitrate Mode. See: http://wiki.hydrogenaud.io/index.php?title=Fraunhofer_FDK_AAC#Bitrate_Modes
+                0 - Constant Bitrate (default).
+                1-5 - Variable Bitrate
+                """,
+                type: :integer,
+                spec: allowed_bitrate_modes(),
+                default: 0
               ],
               input_caps: [
                 description: """
@@ -99,7 +110,12 @@ defmodule Membrane.Element.AAC.Encoder do
       )
 
     with {:ok, native} <-
-           mk_native(input_caps.channels, input_caps.sample_rate, state.options.aot) do
+           mk_native(
+             input_caps.channels,
+             input_caps.sample_rate,
+             state.options.aot,
+             state.options.bitrate_mode
+           ) do
       {:ok, %{state | native: native}}
     else
       {:error, reason} -> {{:error, reason}, state}
@@ -124,7 +140,13 @@ defmodule Membrane.Element.AAC.Encoder do
   @impl true
   def handle_caps(:input, caps, _ctx, %{options: %{input_caps: input_caps}} = state)
       when input_caps in [nil, caps] do
-    with {:ok, native} <- mk_native(caps.channels, caps.sample_rate, state.options.aot) do
+    with {:ok, native} <-
+           mk_native(
+             caps.channels,
+             caps.sample_rate,
+             state.options.aot,
+             state.options.bitrate_mode
+           ) do
       {:ok, %{state | native: native}}
     else
       {:error, reason} -> {{:error, reason}, state}
@@ -217,15 +239,17 @@ defmodule Membrane.Element.AAC.Encoder do
     {:ok, {acc |> Enum.reverse(), bytes_used}}
   end
 
-  defp mk_native(channels, sample_rate, aot) do
+  defp mk_native(channels, sample_rate, aot, bitrate_mode) do
     with {:ok, channels} <- validate_channels(channels),
          {:ok, sample_rate} <- validate_sample_rate(sample_rate),
          {:ok, aot} <- validate_aot(aot),
+         {:ok, bitrate_mode} <- validate_bitrate_mode(bitrate_mode),
          {:ok, native} <-
            Native.create(
              channels,
              sample_rate,
-             aot
+             aot,
+             bitrate_mode
            ) do
       {:ok, native}
     else
@@ -245,4 +269,9 @@ defmodule Membrane.Element.AAC.Encoder do
     do: {:ok, sample_rate}
 
   defp validate_sample_rate(_), do: {:error, :invalid_sample_rate}
+
+  defp validate_bitrate_mode(bitrate_mode) when bitrate_mode in @allowed_bitrate_modes,
+    do: {:ok, bitrate_mode}
+
+  defp validate_bitrate_mode(_), do: {:error, :invalid_bitrate_mode}
 end
