@@ -1,7 +1,7 @@
 #include "encoder.h"
 
 static const int SAMPLE_SIZE = 2;
-static const MAX_AAC_BUFFER_SIZE = 8192;  // TODO: Validate
+static const int MAX_AAC_BUFFER_SIZE = 8192;  // TODO: Validate
 
 /**
  * AAC Encoder implementation.
