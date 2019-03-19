@@ -59,7 +59,7 @@ char *get_error_message(AACENC_ERROR err) {
  * In case of error, returns:
  * - {:error, reason}
  */
-UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot, int bitrate_mode) {
+UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot, int bitrate_mode, int bitrate) {
   State *state = unifex_alloc_state(env);
   state->channels = channels;
 
@@ -138,8 +138,12 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot, int b
     }
   } else {
     // CBR
+    // If bitrate is not specified by the user, this will estimate the bitrate, following the "rule of thumb"
+    // described here: https://trac.ffmpeg.org/wiki/Encode/AAC#fdk_cbr
     // This is based on: https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libfdk-aacenc.c#L245
-    int bitrate = (96 * sce + 128 * cpe) * sample_rate / 44;
+    if (!bitrate) {
+      bitrate = (96 * sce + 128 * cpe) * sample_rate / 44;
+    }
     if (aot == PROFILE_AAC_HE ||
         aot == PROFILE_AAC_HE_v2 ||
         aot == PROFILE_MPEG2_AAC_HE) {

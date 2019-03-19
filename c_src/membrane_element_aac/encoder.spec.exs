@@ -4,7 +4,8 @@ spec create(
   channels :: int,
   sample_rate :: int,
   aot :: int,
-  bitrate_mode :: int
+  bitrate_mode :: int,
+  bitrate :: int
 ) :: {:ok :: label, state}
   | {:error :: label, reason :: atom}
 

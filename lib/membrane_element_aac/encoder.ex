@@ -66,6 +66,17 @@ defmodule Membrane.Element.AAC.Encoder do
                 spec: allowed_bitrate_modes(),
                 default: 0
               ],
+              bitrate: [
+                description: """
+                Bitrate in bits/s for CBR.
+                If set to nil (default value), the bitrate will be estimated based on the number of channels and sample rate.
+                See: https://trac.ffmpeg.org/wiki/Encode/AAC#fdk_cbr
+                Note that for VBR this parameter is ignored.
+                """,
+                type: :integer,
+                spec: pos_integer() | nil,
+                default: nil
+              ],
               input_caps: [
                 description: """
                 Caps for the input pad. If set to nil (default value),
@@ -114,7 +125,8 @@ defmodule Membrane.Element.AAC.Encoder do
              input_caps.channels,
              input_caps.sample_rate,
              state.aot,
-             state.bitrate_mode
+             state.bitrate_mode,
+             state.bitrate
            ) do
       {:ok, %{state | native: native, input_caps: input_caps}}
     else
@@ -145,7 +157,8 @@ defmodule Membrane.Element.AAC.Encoder do
              caps.channels,
              caps.sample_rate,
              state.aot,
-             state.bitrate_mode
+             state.bitrate_mode,
+             state.bitrate
            ) do
       {:ok, %{state | native: native, input_caps: caps}}
     else
@@ -236,7 +249,7 @@ defmodule Membrane.Element.AAC.Encoder do
     {:ok, {acc |> Enum.reverse(), bytes_used}}
   end
 
-  defp mk_native(channels, sample_rate, aot, bitrate_mode) do
+  defp mk_native(channels, sample_rate, aot, bitrate_mode, bitrate) do
     with {:ok, channels} <- validate_channels(channels),
          {:ok, sample_rate} <- validate_sample_rate(sample_rate),
          {:ok, aot} <- validate_aot(aot),
@@ -246,7 +259,8 @@ defmodule Membrane.Element.AAC.Encoder do
              channels,
              sample_rate,
              aot,
-             bitrate_mode
+             bitrate_mode,
+             bitrate || 0
            ) do
       {:ok, native}
     else
