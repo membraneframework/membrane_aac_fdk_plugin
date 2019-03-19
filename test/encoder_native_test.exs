@@ -5,6 +5,8 @@ defmodule Encoder.NativeTest do
   @channels 2
   @sample_rate 44_100
   @audio_object_type 2
+  # CBR
+  @bitrate_mode 0
 
   def prepare_paths(filename) do
     in_path = "fixtures/input-#{filename}.raw" |> Path.expand(__DIR__)
@@ -23,7 +25,8 @@ defmodule Encoder.NativeTest do
 
       assert {:ok, file} = File.read(in_path)
 
-      assert {:ok, encoder_ref} = Native.create(@channels, @sample_rate, @audio_object_type)
+      assert {:ok, encoder_ref} =
+               Native.create(@channels, @sample_rate, @audio_object_type, @bitrate_mode)
 
       assert <<frame::bytes-size(4096), _::binary>> = file
       assert {:ok, encoded_frame} = Native.encode_frame(frame, encoder_ref)
@@ -40,7 +43,8 @@ defmodule Encoder.NativeTest do
 
       assert {:ok, file} = File.read(in_path)
 
-      assert {:ok, encoder_ref} = Native.create(@channels, @sample_rate, @audio_object_type)
+      assert {:ok, encoder_ref} =
+               Native.create(@channels, @sample_rate, @audio_object_type, @bitrate_mode)
 
       assert <<frame::bytes-size(8192), _::binary>> = file
       assert {:ok, encoded_frame} = Native.encode_frame(frame, encoder_ref)
@@ -57,7 +61,8 @@ defmodule Encoder.NativeTest do
 
       assert {:ok, file} = File.read(in_path)
 
-      assert {:ok, encoder_ref} = Native.create(@channels, @sample_rate, @audio_object_type)
+      assert {:ok, encoder_ref} =
+               Native.create(@channels, @sample_rate, @audio_object_type, @bitrate_mode)
 
       assert <<frame::bytes-size(1024), _::binary>> = file
       assert {:error, :no_data} = Native.encode_frame(frame, encoder_ref)
