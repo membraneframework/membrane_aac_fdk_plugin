@@ -19,9 +19,15 @@ defmodule Membrane.Element.AAC.Encoder do
   @default_channels 2
   @default_sample_rate 44_100
   # MPEG-4 AAC Low Complexity
-  @default_audio_object_type 2
+  @default_audio_object_type :mpeg4_lc
   @list_type allowed_channels :: [1, 2]
-  @list_type allowed_aots :: [2, 5, 29, 129, 132]
+  @list_type allowed_aots :: [
+               :mpeg4_lc,
+               :mpeg4_he,
+               :mpeg4_he_v2,
+               :mpeg2_lc,
+               :mpeg2_he
+             ]
   @list_type allowed_sample_rates :: [
                96000,
                88200,
@@ -52,7 +58,7 @@ defmodule Membrane.Element.AAC.Encoder do
                 129: MPEG-2 AAC Low Complexity.
                 132: MPEG-2 AAC Low Complexity with Spectral Band Replication (HE-AAC).
                 """,
-                type: :integer,
+                type: :atom,
                 spec: allowed_aots(),
                 default: @default_audio_object_type
               ],
@@ -252,7 +258,7 @@ defmodule Membrane.Element.AAC.Encoder do
   defp mk_native(channels, sample_rate, aot, bitrate_mode, bitrate) do
     with {:ok, channels} <- validate_channels(channels),
          {:ok, sample_rate} <- validate_sample_rate(sample_rate),
-         {:ok, aot} <- validate_aot(aot),
+         {:ok, aot} <- map_aot_to_value(aot),
          {:ok, bitrate_mode} <- validate_bitrate_mode(bitrate_mode),
          {:ok, native} <-
            Native.create(
@@ -269,13 +275,17 @@ defmodule Membrane.Element.AAC.Encoder do
   end
 
   # Frame size is 2 times larger for HE profiles.
-  defp aac_frame_size(aot) when aot in [5, 29, 132], do: 2048
+  defp aac_frame_size(aot) when aot in [:mpeg4_he, :mpeg4_he_v2, :mpeg2_he], do: 2048
   defp aac_frame_size(_), do: 1024
 
   # Options validators
 
-  defp validate_aot(aot) when aot in @allowed_aots, do: {:ok, aot}
-  defp validate_aot(_), do: {:error, :invalid_aot}
+  defp map_aot_to_value(:mpeg4_lc), do: {:ok, 2}
+  defp map_aot_to_value(:mpeg4_he), do: {:ok, 5}
+  defp map_aot_to_value(:mpeg4_he_v2), do: {:ok, 29}
+  defp map_aot_to_value(:mpeg2_lc), do: {:ok, 129}
+  defp map_aot_to_value(:mpeg2_he), do: {:ok, 132}
+  defp map_aot_to_value(_), do: {:error, :invalid_aot}
 
   defp validate_channels(channels) when channels in @allowed_channels, do: {:ok, channels}
   defp validate_channels(_), do: {:error, :invalid_channels}
