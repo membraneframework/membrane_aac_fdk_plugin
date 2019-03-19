@@ -138,13 +138,13 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot, int b
     }
   } else {
     // CBR
+    // This is based on: https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libfdk-aacenc.c#L245
     int bitrate = (96 * sce + 128 * cpe) * sample_rate / 44;
     if (aot == PROFILE_AAC_HE ||
         aot == PROFILE_AAC_HE_v2 ||
         aot == PROFILE_MPEG2_AAC_HE) {
       bitrate /= 2;
     }
-    printf("Calculated bitrate: %d\n", bitrate);
     err = aacEncoder_SetParam(state->handle, AACENC_BITRATE, bitrate);
     if (err != AACENC_OK) {
       MEMBRANE_WARN(env, "AAC: Unable to set bitrate: %x\n", err);
