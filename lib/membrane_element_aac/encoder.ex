@@ -89,32 +89,35 @@ defmodule Membrane.Element.AAC.Encoder do
 
   @impl true
   def handle_init(options) do
-    {:ok,
-     %{
-       native: nil,
-       options: options,
-       queue: <<>>
-     }}
+    state =
+      options
+      |> Map.from_struct()
+      |> Map.merge(%{
+        native: nil,
+        queue: <<>>
+      })
+
+    {:ok, state}
   end
 
   @impl true
-  def handle_stopped_to_prepared(_ctx, %{options: %{input_caps: nil}} = state), do: {:ok, state}
+  def handle_stopped_to_prepared(_ctx, %{input_caps: nil} = state), do: {:ok, state}
 
   def handle_stopped_to_prepared(_ctx, state) do
     input_caps =
       Map.merge(
         %Raw{format: :s16le, channels: @default_channels, sample_rate: @default_sample_rate},
-        state.options.input_caps
+        state.input_caps
       )
 
     with {:ok, native} <-
            mk_native(
              input_caps.channels,
              input_caps.sample_rate,
-             state.options.aot,
-             state.options.bitrate_mode
+             state.aot,
+             state.bitrate_mode
            ) do
-      {:ok, %{state | native: native}}
+      {:ok, %{state | native: native, input_caps: input_caps}}
     else
       {:error, reason} -> {{:error, reason}, state}
     end
@@ -136,16 +139,16 @@ defmodule Membrane.Element.AAC.Encoder do
   end
 
   @impl true
-  def handle_caps(:input, caps, _ctx, %{options: %{input_caps: input_caps}} = state)
+  def handle_caps(:input, caps, _ctx, %{input_caps: input_caps} = state)
       when input_caps in [nil, caps] do
     with {:ok, native} <-
            mk_native(
              caps.channels,
              caps.sample_rate,
-             state.options.aot,
-             state.options.bitrate_mode
+             state.aot,
+             state.bitrate_mode
            ) do
-      {:ok, %{state | native: native}}
+      {:ok, %{state | native: native, input_caps: caps}}
     else
       {:error, reason} -> {{:error, reason}, state}
     end
@@ -164,8 +167,10 @@ defmodule Membrane.Element.AAC.Encoder do
 
     to_encode = queue <> data
 
+    raw_frame_size = aac_frame_size(state.aot) * state.input_caps.channels * @sample_size
+
     with {:ok, {encoded_buffers, bytes_used}} when bytes_used > 0 <-
-           encode_buffer(to_encode, native) do
+           encode_buffer(to_encode, native, raw_frame_size) do
       <<_handled::binary-size(bytes_used), rest::binary>> = to_encode
 
       buffer_actions = [buffer: {:output, encoded_buffers}]
@@ -203,15 +208,10 @@ defmodule Membrane.Element.AAC.Encoder do
     super(pad, event, ctx, state)
   end
 
-  # Initialize buffer encoding
-  defp encode_buffer(buffer, native) do
-    raw_frame_size = @aac_frame_size * @default_channels * @sample_size
-
-    encode_buffer(buffer, native, [], 0, raw_frame_size)
-  end
+  defp encode_buffer(buffer, native, raw_frame_size, acc \\ [], bytes_used \\ 0)
 
   # Encode a single frame if buffer contains at least one frame
-  defp encode_buffer(buffer, native, acc, bytes_used, raw_frame_size)
+  defp encode_buffer(buffer, native, raw_frame_size, acc, bytes_used)
        when byte_size(buffer) >= raw_frame_size do
     <<raw_frame::binary-size(raw_frame_size), rest::binary>> = buffer
 
@@ -222,9 +222,9 @@ defmodule Membrane.Element.AAC.Encoder do
       encode_buffer(
         rest,
         native,
+        raw_frame_size,
         [encoded_buffer | acc],
-        bytes_used + raw_frame_size,
-        raw_frame_size
+        bytes_used + raw_frame_size
       )
     else
       {:error, reason} -> {:error, reason}
@@ -232,7 +232,7 @@ defmodule Membrane.Element.AAC.Encoder do
   end
 
   # Not enough samples for a frame
-  defp encode_buffer(_native, _partial_buffer, acc, bytes_used, _raw_frame_size) do
+  defp encode_buffer(_partial_buffer, _native, _raw_frame_size, acc, bytes_used) do
     # Return accumulated encoded frames
     {:ok, {acc |> Enum.reverse(), bytes_used}}
   end
@@ -254,6 +254,10 @@ defmodule Membrane.Element.AAC.Encoder do
       {:error, reason} -> {:error, reason}
     end
   end
+
+  # Frame size is 2 times larger for HE profiles.
+  defp aac_frame_size(aot) when aot in [5, 29, 132], do: 2048
+  defp aac_frame_size(_), do: 1024
 
   # Options validators
 
