@@ -22,7 +22,7 @@ defmodule Membrane.Element.AAC.Encoder do
   # MPEG-4 AAC Low Complexity
   @default_audio_object_type 2
   @list_type allowed_channels :: [1, 2]
-  @list_type allowed_aots :: [2, 5, 29, 23, 39, 129, 132]
+  @list_type allowed_aots :: [2, 5, 29, 129, 132]
   @list_type allowed_sample_rates :: [
                96000,
                88200,
@@ -50,8 +50,6 @@ defmodule Membrane.Element.AAC.Encoder do
                 2: MPEG-4 AAC Low Complexity.
                 5: MPEG-4 AAC Low Complexity with Spectral Band Replication (HE-AAC).
                 29: MPEG-4 AAC Low Complexity with Spectral Band Replication and Parametric Stereo (HE-AAC v2). This configuration can be used only with stereo input audio data.
-                23: MPEG-4 AAC Low-Delay.
-                39: MPEG-4 AAC Enhanced Low-Delay.
                 129: MPEG-2 AAC Low Complexity.
                 132: MPEG-2 AAC Low Complexity with Spectral Band Replication (HE-AAC).
                 """,
