@@ -1,4 +1,4 @@
-defmodule Membrane.Element.AAC.Decoder.Native do
+defmodule Membrane.Element.FDK.AAC.Decoder.Native do
   @moduledoc """
   Interface module for native AAC decoder.
   """

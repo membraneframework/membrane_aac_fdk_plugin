@@ -1,4 +1,4 @@
-defmodule Membrane.Element.AAC do
+defmodule Membrane.Element.FDK.AAC do
   @moduledoc false
   use Application
 
