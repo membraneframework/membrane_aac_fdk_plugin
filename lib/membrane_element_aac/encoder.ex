@@ -14,7 +14,6 @@ defmodule Membrane.Element.AAC.Encoder do
   use Membrane.Log, tags: :membrane_element_aac
 
   # AAC Constants
-  @aac_frame_size 1024
   @sample_size 2
 
   @default_channels 2
@@ -135,7 +134,7 @@ defmodule Membrane.Element.AAC.Encoder do
 
   @impl true
   def handle_demand(:output, bufs, :buffers, _ctx, state) do
-    {{:ok, demand: {:input, @aac_frame_size * bufs}}, state}
+    {{:ok, demand: {:input, aac_frame_size(state.aot) * bufs}}, state}
   end
 
   @impl true
