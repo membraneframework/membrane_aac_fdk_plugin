@@ -1,4 +1,4 @@
-defmodule Membrane.Element.AAC.Decoder do
+defmodule Membrane.Element.FDK.AAC.Decoder do
   @moduledoc """
   Element for decoding AAC audio to raw data in S16LE format.
   """

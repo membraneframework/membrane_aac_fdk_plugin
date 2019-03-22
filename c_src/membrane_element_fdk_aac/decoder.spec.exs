@@ -1,4 +1,4 @@
-module Membrane.Element.AAC.Decoder.Native
+module Membrane.Element.FDK.AAC.Decoder.Native
 
 spec create() :: {:ok :: label, state}
   | {:error :: label, :unknown :: label}

@@ -1,4 +1,4 @@
-defmodule Membrane.Element.AAC.BundlexProject do
+defmodule Membrane.Element.FDK.AAC.BundlexProject do
   use Bundlex.Project
 
   def project() do

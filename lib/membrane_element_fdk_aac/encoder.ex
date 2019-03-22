@@ -1,4 +1,4 @@
-defmodule Membrane.Element.AAC.Encoder do
+defmodule Membrane.Element.FDK.AAC.Encoder do
   @moduledoc """
   Element encoding raw audio into AAC format
   """
@@ -11,7 +11,7 @@ defmodule Membrane.Element.AAC.Encoder do
   alias Membrane.Caps.Matcher
   alias Membrane.Event.EndOfStream
 
-  use Membrane.Log, tags: :membrane_element_aac
+  use Membrane.Log, tags: :membrane_element_fdk_aac
 
   # AAC Constants
   @sample_size 2
