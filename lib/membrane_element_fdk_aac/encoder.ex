@@ -94,14 +94,9 @@ defmodule Membrane.Element.FDK.AAC.Encoder do
                 default: nil
               ]
 
-  def_output_pads output: [
-                    caps: :any
-                  ]
+  def_output_pad :output, caps: :any
 
-  def_input_pads input: [
-                   demand_unit: :bytes,
-                   caps: @supported_caps
-                 ]
+  def_input_pad :input, demand_unit: :bytes, caps: @supported_caps
 
   @impl true
   def handle_init(options) do
