@@ -1,6 +1,6 @@
 defmodule Encoder.NativeTest do
   use ExUnit.Case, async: true
-  alias Membrane.Element.AAC.Encoder.Native
+  alias Membrane.Element.FDK.AAC.Encoder.Native
 
   @channels 2
   @sample_rate 44_100
