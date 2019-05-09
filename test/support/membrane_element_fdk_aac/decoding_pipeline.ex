@@ -1,4 +1,4 @@
-defmodule DecodingPipeline do
+defmodule Membrane.Element.FDK.AAC.Support.DecodingPipeline do
   @moduledoc false
 
   alias Membrane.Testing.Pipeline

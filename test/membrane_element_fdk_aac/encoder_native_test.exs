@@ -1,4 +1,4 @@
-defmodule Encoder.NativeTest do
+defmodule Membrane.Element.FDK.AAC.Encoder.NativeTest do
   use ExUnit.Case, async: true
   alias Membrane.Element.FDK.AAC.Encoder.Native
 
@@ -10,8 +10,8 @@ defmodule Encoder.NativeTest do
   @bitrate 0
 
   def prepare_paths(filename) do
-    in_path = "fixtures/input-#{filename}.raw" |> Path.expand(__DIR__)
-    reference_path = "fixtures/reference-#{filename}.aac" |> Path.expand(__DIR__)
+    in_path = "test/fixtures/input-#{filename}.raw"
+    reference_path = "test/fixtures/reference-#{filename}.aac"
     {in_path, reference_path}
   end
 
