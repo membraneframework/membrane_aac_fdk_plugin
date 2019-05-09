@@ -2,7 +2,7 @@
 
 #include <fdk-aac/aacenc_lib.h>
 #include <membrane/membrane.h>
-#define MEMBRANE_LOG_TAG "Membrane.Element.AAC.EncoderNative"
+#define MEMBRANE_LOG_TAG "Membrane.Element.FDK.AAC.EncoderNative"
 #include <membrane/log.h>
 
 typedef struct _EncoderState {

@@ -1,4 +1,4 @@
-defmodule Membrane.Element.AAC.Decoder do
+defmodule Membrane.Element.FDK.AAC.Decoder do
   @moduledoc """
   Element for decoding AAC audio to raw data in S16LE format.
   """
@@ -9,14 +9,9 @@ defmodule Membrane.Element.AAC.Decoder do
   alias Membrane.Caps.Audio.Raw
   use Bunch
 
-  def_input_pads input: [
-                   caps: :any,
-                   demand_unit: :buffers
-                 ]
+  def_input_pad :input, caps: :any, demand_unit: :buffers
 
-  def_output_pads output: [
-                    caps: {Raw, format: :s16le}
-                  ]
+  def_output_pad :output, caps: {Raw, format: :s16le}
 
   @impl true
   def handle_init(_) do
