@@ -1,6 +1,6 @@
 defmodule Membrane.Element.FDK.AAC.EncoderTest do
   use ExUnit.Case
-  import Membrane.Testing.Pipeline.Assertions
+  import Membrane.Testing.Assertions
   alias Membrane.Pipeline
   alias Membrane.Element.FDK.AAC.Support.EncodingPipeline
 
@@ -25,7 +25,7 @@ defmodule Membrane.Element.FDK.AAC.EncoderTest do
       assert {:ok, pid} = EncodingPipeline.make_pipeline(in_path, out_path)
 
       assert Pipeline.play(pid) == :ok
-      assert_receive_message({:handle_notification, {{:end_of_stream, :input}, :sink}}, 3000)
+      assert_end_of_stream(pid, :sink, :input, 3000)
       assert_files_equal(out_path, reference_path)
     end
   end
