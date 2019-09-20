@@ -3,13 +3,12 @@ defmodule Membrane.Element.FDK.AAC.Encoder do
   Element encoding raw audio into AAC format
   """
 
-  use Membrane.Element.Base.Filter
+  use Membrane.Filter
   use Bunch.Typespec
   alias __MODULE__.Native
   alias Membrane.Buffer
   alias Membrane.Caps.Audio.Raw
   alias Membrane.Caps.Matcher
-  alias Membrane.Event.EndOfStream
 
   use Membrane.Log, tags: :membrane_element_fdk_aac
 
@@ -196,13 +195,13 @@ defmodule Membrane.Element.FDK.AAC.Encoder do
   end
 
   @impl true
-  def handle_event(:input, %EndOfStream{}, _ctx, state) do
+  def handle_end_of_stream(:input, _ctx, state) do
     %{native: native, queue: queue} = state
 
     if queue != <<>>,
       do: warn("Processing queue is not empty, but EndOfStream event was received")
 
-    actions = [event: {:output, %EndOfStream{}}, notify: {:end_of_stream, :input}]
+    actions = [end_of_stream: :output, notify: {:end_of_stream, :input}]
 
     with {:ok, encoded_frame} <- Native.encode_frame(<<>>, native) do
       buffer_actions = [buffer: {:output, %Buffer{payload: encoded_frame}}]
@@ -215,10 +214,6 @@ defmodule Membrane.Element.FDK.AAC.Encoder do
       {:error, reason} ->
         {{:error, reason}, state}
     end
-  end
-
-  def handle_event(pad, event, ctx, state) do
-    super(pad, event, ctx, state)
   end
 
   defp encode_buffer(buffer, native, raw_frame_size, acc \\ [], bytes_used \\ 0)

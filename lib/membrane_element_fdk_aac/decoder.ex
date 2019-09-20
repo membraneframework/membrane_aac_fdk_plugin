@@ -3,7 +3,7 @@ defmodule Membrane.Element.FDK.AAC.Decoder do
   Element for decoding AAC audio to raw data in S16LE format.
   """
 
-  use Membrane.Element.Base.Filter
+  use Membrane.Filter
   alias __MODULE__.Native
   alias Membrane.Buffer
   alias Membrane.Caps.Audio.Raw

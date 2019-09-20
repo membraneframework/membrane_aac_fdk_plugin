@@ -1,7 +1,7 @@
 defmodule Membrane.Element.FDK.AAC.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
   @github_url "https://github.com/membraneframework/membrane-element-fdk-aac"
 
   def project do
@@ -54,8 +54,7 @@ defmodule Membrane.Element.FDK.AAC.MixProject do
 
   defp deps do
     [
-      {:membrane_core,
-       github: "membraneframework/membrane-core", branch: "new-testing-api", override: true},
+      {:membrane_core, "~> 0.4.0"},
       {:membrane_common_c, "~> 0.2.1"},
       {:bunch, "~> 1.0"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
