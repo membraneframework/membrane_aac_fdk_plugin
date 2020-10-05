@@ -253,8 +253,8 @@ UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload,
   }
 
   UnifexPayload *out_payload =
-      unifex_payload_alloc(env, UNIFEX_PAYLOAD_BINARY, out_buffer_size);
-  memcpy(out_payload->data, state->aac_buffer, out_buffer_size);
+      unifex_payload_alloc(env, UNIFEX_PAYLOAD_BINARY, out_args.numOutBytes);
+  memcpy(out_payload->data, state->aac_buffer, out_args.numOutBytes);
   res = encode_frame_result_ok(env, out_payload);
   unifex_payload_release_ptr(&out_payload);
   return res;
