@@ -1,7 +1,7 @@
 #include "encoder.h"
 
 static const int SAMPLE_SIZE = 2;
-static const int MAX_AAC_BUFFER_SIZE = 8192;  // TODO: Validate
+static const int MAX_AAC_BUFFER_SIZE = 8192; // TODO: Validate
 
 static const int PROFILE_AAC_HE = 5;
 static const int PROFILE_AAC_HE_v2 = 29;
@@ -9,7 +9,8 @@ static const int PROFILE_MPEG2_AAC_HE = 132;
 
 /**
  * AAC Encoder implementation.
- * Heavily inspired by https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libfdk-aacenc.c
+ * Heavily inspired by
+ * https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libfdk-aacenc.c
  */
 
 /**
@@ -17,55 +18,59 @@ static const int PROFILE_MPEG2_AAC_HE = 132;
  */
 char *get_error_message(AACENC_ERROR err) {
   switch (err) {
-    case AACENC_OK:
-      return "No error";
-    case AACENC_INVALID_HANDLE:
-      return "Invalid handle";
-    case AACENC_MEMORY_ERROR:
-      return "Memory allocation error";
-    case AACENC_UNSUPPORTED_PARAMETER:
-      return "Unsupported parameter";
-    case AACENC_INVALID_CONFIG:
-      return "Invalid config";
-    case AACENC_INIT_ERROR:
-      return "Initialization error";
-    case AACENC_INIT_AAC_ERROR:
-      return "AAC library initialization error";
-    case AACENC_INIT_SBR_ERROR:
-      return "SBR library initialization error";
-    case AACENC_INIT_TP_ERROR:
-      return "Transport library initialization error";
-    case AACENC_INIT_META_ERROR:
-      return "Metadata library initialization error";
-    case AACENC_ENCODE_ERROR:
-      return "Encoding error";
-    case AACENC_ENCODE_EOF:
-      return "End of file";
-    default:
-      return "Unknown error";
+  case AACENC_OK:
+    return "No error";
+  case AACENC_INVALID_HANDLE:
+    return "Invalid handle";
+  case AACENC_MEMORY_ERROR:
+    return "Memory allocation error";
+  case AACENC_UNSUPPORTED_PARAMETER:
+    return "Unsupported parameter";
+  case AACENC_INVALID_CONFIG:
+    return "Invalid config";
+  case AACENC_INIT_ERROR:
+    return "Initialization error";
+  case AACENC_INIT_AAC_ERROR:
+    return "AAC library initialization error";
+  case AACENC_INIT_SBR_ERROR:
+    return "SBR library initialization error";
+  case AACENC_INIT_TP_ERROR:
+    return "Transport library initialization error";
+  case AACENC_INIT_META_ERROR:
+    return "Metadata library initialization error";
+  case AACENC_ENCODE_ERROR:
+    return "Encoding error";
+  case AACENC_ENCODE_EOF:
+    return "End of file";
+  default:
+    return "Unknown error";
   }
 }
 
 /**
  * Initializes AAC Encoder and returns State resource.
- * 
+ *
  * Expects:
- * - channels - Number of channels. For now, only supports either 1 or 2 channels.
+ * - channels - Number of channels. For now, only supports either 1 or 2
+ * channels.
  * - sample_rate - Sample rate.
  * - aot - Audio Object Type.
- * - bitrate_mode - 0 for CBR, 1-5 for VBR mode. See: http://wiki.hydrogenaud.io/index.php?title=Fraunhofer_FDK_AAC#Bitrate_Modes
- * 
+ * - bitrate_mode - 0 for CBR, 1-5 for VBR mode. See:
+ * http://wiki.hydrogenaud.io/index.php?title=Fraunhofer_FDK_AAC#Bitrate_Modes
+ *
  * On success, returns {:ok, encoder_state}
  * In case of error, returns:
  * - {:error, reason}
  */
-UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot, int bitrate_mode, int bitrate) {
+UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot,
+                   int bitrate_mode, int bitrate) {
   State *state = unifex_alloc_state(env);
   state->channels = channels;
 
   AACENC_ERROR err;
   CHANNEL_MODE channel_mode;
-  // See: https://wiki.multimedia.cx/index.php/Understanding_AAC#Frames_And_Syntax_Elements
+  // See:
+  // https://wiki.multimedia.cx/index.php/Understanding_AAC#Frames_And_Syntax_Elements
   int sce = 0, cpe = 0;
 
   // Initialize AAC Encoder handle
@@ -98,23 +103,24 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot, int b
 
   // Set channels configuration
   switch (channels) {
-    case 1:
-      channel_mode = MODE_1;
-      sce = 1;
-      cpe = 0;
-      break;
-    case 2:
-      channel_mode = MODE_2;
-      sce = 0;
-      cpe = 1;
-      break;
-    default:
-      MEMBRANE_WARN(env, "AAC: Unsupported number of channels: %d", channels);
-      return create_result_error(env, get_error_message(err));
+  case 1:
+    channel_mode = MODE_1;
+    sce = 1;
+    cpe = 0;
+    break;
+  case 2:
+    channel_mode = MODE_2;
+    sce = 0;
+    cpe = 1;
+    break;
+  default:
+    MEMBRANE_WARN(env, "AAC: Unsupported number of channels: %d", channels);
+    return create_result_error(env, get_error_message(err));
   }
   err = aacEncoder_SetParam(state->handle, AACENC_CHANNELMODE, channel_mode);
   if (err != AACENC_OK) {
-    MEMBRANE_WARN(env, "AAC: Unable to set channel mode %d: %x\n", channel_mode, err);
+    MEMBRANE_WARN(env, "AAC: Unable to set channel mode %d: %x\n", channel_mode,
+                  err);
     return create_result_error(env, get_error_message(err));
   }
 
@@ -128,7 +134,9 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot, int b
   if (bitrate_mode) {
     // VBR
     if (bitrate_mode < 1 || bitrate_mode > 5) {
-      MEMBRANE_WARN(env, "AAC: Unable to set VBR mode: %d. VBR quality should be 1-5\n", bitrate_mode);
+      MEMBRANE_WARN(
+          env, "AAC: Unable to set VBR mode: %d. VBR quality should be 1-5\n",
+          bitrate_mode);
       return create_result_error(env, "invalid_vbr");
     }
     err = aacEncoder_SetParam(state->handle, AACENC_BITRATEMODE, bitrate_mode);
@@ -138,14 +146,14 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot, int b
     }
   } else {
     // CBR
-    // If bitrate is not specified by the user, this will estimate the bitrate, following the "rule of thumb"
-    // described here: https://trac.ffmpeg.org/wiki/Encode/AAC#fdk_cbr
-    // This is based on: https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libfdk-aacenc.c#L245
+    // If bitrate is not specified by the user, this will estimate the bitrate,
+    // following the "rule of thumb" described here:
+    // https://trac.ffmpeg.org/wiki/Encode/AAC#fdk_cbr This is based on:
+    // https://github.com/FFmpeg/FFmpeg/blob/master/libavcodec/libfdk-aacenc.c#L245
     if (!bitrate) {
       bitrate = (96 * sce + 128 * cpe) * sample_rate / 44;
     }
-    if (aot == PROFILE_AAC_HE ||
-        aot == PROFILE_AAC_HE_v2 ||
+    if (aot == PROFILE_AAC_HE || aot == PROFILE_AAC_HE_v2 ||
         aot == PROFILE_MPEG2_AAC_HE) {
       bitrate /= 2;
     }
@@ -176,18 +184,20 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot, int b
 
 /**
  * Encodes one input frame.
- * 
+ *
  * Expects:
  * - Buffer to encoder
  * - Native resource
  * as arguments
- * 
+ *
  * Returns on of:
  * - {:ok, {encoded_frame}} - Encoded AAC frame
- * - {:error, :no_data} - When supplied input buffer does not contain enough data to encode a single frame
+ * - {:error, :no_data} - When supplied input buffer does not contain enough
+ * data to encode a single frame
  * - {:error, reason} - When native encoding failed
  */
-UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state) {
+UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload,
+                         State *state) {
   UNIFEX_TERM res;
   AACENC_ERROR err;
 
@@ -242,7 +252,8 @@ UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state
     return encode_frame_result_error_no_data(env);
   }
 
-  UnifexPayload *out_payload = unifex_payload_alloc(env, UNIFEX_PAYLOAD_BINARY, out_buffer_size);
+  UnifexPayload *out_payload =
+      unifex_payload_alloc(env, UNIFEX_PAYLOAD_BINARY, out_buffer_size);
   memcpy(out_payload->data, state->aac_buffer, out_buffer_size);
   res = encode_frame_result_ok(env, out_payload);
   unifex_payload_release_ptr(&out_payload);
