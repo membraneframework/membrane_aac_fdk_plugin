@@ -1,5 +1,5 @@
 # Membrane AAC FDK plugin
-[![CircleCI](https://circleci.com/gh/membraneframework/membrane-element-fdk-aac.svg?style=svg)](https://circleci.com/gh/membraneframework/membrane-element-fdk-aac)
+[![CircleCI](https://circleci.com/gh/membraneframework/membrane_aac_fdk_plugin.svg?style=svg)](https://circleci.com/gh/membraneframework/membrane_aac_fdk_plugin)
 
 AAC decoder and encoder based on FDK library.
 

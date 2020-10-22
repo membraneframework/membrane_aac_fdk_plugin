@@ -2,7 +2,7 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
   use Mix.Project
 
   @version "0.2.1"
-  @github_url "https://github.com/membraneframework/membrane-element-fdk-aac"
+  @github_url "https://github.com/membraneframework/membrane_aac_fdk_plugin"
 
   def project do
     [
