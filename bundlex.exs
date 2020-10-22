@@ -3,27 +3,25 @@ defmodule Membrane.AAC.FDK.BundlexProject do
 
   def project() do
     [
-      nifs: nifs(Bundlex.platform())
+      natives: natives()
     ]
   end
 
-  def nifs(_platform) do
+  def natives() do
     [
       decoder: [
-        deps: [membrane_common_c: :membrane, unifex: :unifex],
-        sources: [
-          "_generated/decoder.c",
-          "decoder.c"
-        ],
-        libs: ["fdk-aac"]
+        interface: :nif,
+        deps: [membrane_common_c: :membrane],
+        sources: ["decoder.c"],
+        libs: ["fdk-aac"],
+        preprocessor: Unifex
       ],
       encoder: [
-        deps: [membrane_common_c: :membrane, unifex: :unifex],
-        sources: [
-          "_generated/encoder.c",
-          "encoder.c"
-        ],
-        libs: ["fdk-aac"]
+        interface: :nif,
+        deps: [membrane_common_c: :membrane],
+        sources: ["encoder.c"],
+        libs: ["fdk-aac"],
+        preprocessor: Unifex
       ]
     ]
   end

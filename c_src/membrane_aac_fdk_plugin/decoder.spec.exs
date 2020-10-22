@@ -1,5 +1,7 @@
 module Membrane.AAC.FDK.Decoder.Native
 
+state_type "State"
+
 spec create() :: {:ok :: label, state}
   | {:error :: label, :unknown :: label}
   | {:error :: label, :no_memory :: label}

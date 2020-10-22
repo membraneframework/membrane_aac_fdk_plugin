@@ -6,8 +6,7 @@
 #include "stdint.h"
 #include <membrane/log.h>
 
-typedef struct _DecoderState UnifexNifState;
-typedef UnifexNifState State;
+typedef struct _DecoderState State;
 
 struct _DecoderState {
   HANDLE_AACDECODER handle;
