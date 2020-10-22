@@ -1,4 +1,4 @@
-module Membrane.Element.FDK.AAC.Encoder.Native
+module Membrane.AAC.FDK.Encoder.Native
 
 spec create(
   channels :: int,

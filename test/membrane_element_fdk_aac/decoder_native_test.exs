@@ -1,6 +1,6 @@
-defmodule Membrane.Element.FDK.AAC.Decoder.NativeTest do
+defmodule Membrane.AAC.FDK.Decoder.NativeTest do
   use ExUnit.Case, async: true
-  alias Membrane.Element.FDK.AAC.Decoder.Native
+  alias Membrane.AAC.FDK.Decoder.Native
 
   def prepare_paths(filename) do
     in_path = "test/fixtures/input-#{filename}.aac"

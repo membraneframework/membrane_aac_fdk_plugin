@@ -2,7 +2,7 @@
 
 #include <fdk-aac/aacdecoder_lib.h>
 #include <membrane/membrane.h>
-#define MEMBRANE_LOG_TAG "Membrane.Element.FDK.AAC.DecoderNative"
+#define MEMBRANE_LOG_TAG "Membrane.AAC.FDK.DecoderNative"
 #include "stdint.h"
 #include <membrane/log.h>
 

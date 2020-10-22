@@ -1,8 +1,8 @@
-defmodule Membrane.Element.FDK.AAC.PipelineTest do
+defmodule Membrane.AAC.FDK.PipelineTest do
   use ExUnit.Case
   import Membrane.Testing.Assertions
   alias Membrane.Pipeline
-  alias Membrane.Element.FDK.AAC.Support.{DecodingPipeline, EncodingPipeline}
+  alias Membrane.AAC.FDK.Support.{DecodingPipeline, EncodingPipeline}
 
   defp assert_files_equal(file_a, file_b) do
     assert {:ok, a} = File.read(file_a)
