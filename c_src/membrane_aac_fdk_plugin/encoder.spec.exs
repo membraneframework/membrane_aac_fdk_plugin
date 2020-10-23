@@ -1,5 +1,7 @@
 module Membrane.AAC.FDK.Encoder.Native
 
+state_type "State"
+
 spec create(
   channels :: int,
   sample_rate :: int,
