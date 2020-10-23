@@ -1,20 +1,20 @@
-# Membrane Multimedia Framework: FDK-AAC Element
-[![CircleCI](https://circleci.com/gh/membraneframework/membrane-element-fdk-aac.svg?style=svg)](https://circleci.com/gh/membraneframework/membrane-element-fdk-aac)
+# Membrane AAC FDK plugin
+[![CircleCI](https://circleci.com/gh/membraneframework/membrane_aac_fdk_plugin.svg?style=svg)](https://circleci.com/gh/membraneframework/membrane_aac_fdk_plugin)
 
-This package provides elements that can be used for decoding/encoding AAC audio.
+AAC decoder and encoder based on FDK library.
 
 It is part of [Membrane Multimedia Framework](https://membraneframework.org).
 
-The docs can be found at [HexDocs](https://hexdocs.pm/membrane_element_fdk_aac).
+The docs can be found at [HexDocs](https://hexdocs.pm/membrane_aac_fdk_plugin).
 
 ## Installation
 
-The package can be installed by adding `membrane_element_fdk_aac` to your list of dependencies in `mix.exs`:
+The package can be installed by adding `membrane_aac_fdk_plugin` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:membrane_element_fdk_aac, "~> 0.2.0"}
+    {:membrane_aac_fdk_plugin, "~> 0.2.0"}
   ]
 end
 ```

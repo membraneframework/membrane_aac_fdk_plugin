@@ -1,4 +1,4 @@
-defmodule Membrane.Element.FDK.AAC.Support.DecodingPipeline do
+defmodule Membrane.AAC.FDK.Support.DecodingPipeline do
   @moduledoc false
 
   alias Membrane.Testing.Pipeline
@@ -7,7 +7,7 @@ defmodule Membrane.Element.FDK.AAC.Support.DecodingPipeline do
     Pipeline.start_link(%Pipeline.Options{
       elements: [
         file_src: %Membrane.Element.File.Source{location: in_path},
-        decoder: Membrane.Element.FDK.AAC.Decoder,
+        decoder: Membrane.AAC.FDK.Decoder,
         sink: %Membrane.Element.File.Sink{location: out_path}
       ]
     })

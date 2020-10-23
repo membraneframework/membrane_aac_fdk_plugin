@@ -1,21 +1,20 @@
-defmodule Membrane.Element.FDK.AAC.MixProject do
+defmodule Membrane.AAC.FDK.Plugin.MixProject do
   use Mix.Project
 
   @version "0.2.1"
-  @github_url "https://github.com/membraneframework/membrane-element-fdk-aac"
+  @github_url "https://github.com/membraneframework/membrane_aac_fdk_plugin"
 
   def project do
     [
-      app: :membrane_element_fdk_aac,
-      # add unifex and bundlex to compilers
+      app: :membrane_aac_fdk_plugin,
       compilers: [:unifex, :bundlex] ++ Mix.compilers(),
       version: @version,
       elixir: "~> 1.7",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
-      description: "Membrane Multimedia Framework (FDK-AAC Element)",
+      description: "Membrane AAC decoder and encoder based on FDK library",
       package: package(),
-      name: "Membrane Element: FDK-AAC",
+      name: "Membrane AAC FDK plugin",
       source_url: @github_url,
       docs: docs(),
       homepage_url: "https://membraneframework.org",
@@ -58,7 +57,7 @@ defmodule Membrane.Element.FDK.AAC.MixProject do
       {:membrane_common_c, "~> 0.3.0"},
       {:bunch, "~> 1.0"},
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
-      {:dialyxir, "~> 1.0.0-rc.4", only: [:dev], runtime: false},
+      {:dialyxir, "~> 1.0.0", only: [:dev], runtime: false},
       {:unifex, "~> 0.2.3"},
       {:membrane_caps_audio_raw, "~> 0.2.0"},
       {:membrane_element_file, "~> 0.3.0", only: [:dev, :test]}
