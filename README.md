@@ -38,9 +38,11 @@ pacman -S libfdk-aac
 ```
 brew install fdk-aac
 ```
-## Sample usage
+## Usage
 
-Encoder
+### Encoder  
+The following pipeline takes wav file as input and encodes it as AAC. 
+
 ```elixir
 defmodule AAC.Pipeline do
   use Membrane.Pipeline
@@ -65,7 +67,8 @@ defmodule AAC.Pipeline do
   end
 end
 ```
-Decoder
+### Decoder
+The following pipeline takes AAC file as input and plays it on speakers. 
 ```elixir
 defmodule AAC.Pipeline do
   use Membrane.Pipeline
