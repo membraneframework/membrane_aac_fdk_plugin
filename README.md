@@ -1,4 +1,6 @@
 # Membrane AAC FDK plugin
+[![Hex.pm](https://img.shields.io/hexpm/v/membrane_aac_fdk_plugin.svg)](https://hex.pm/packages/membrane_aac_fdk_plugin)
+[![API Docs](https://img.shields.io/badge/api-docs-yellow.svg?style=flat)](https://hexdocs.pm/membrane_aac_fdk_plugin/)
 [![CircleCI](https://circleci.com/gh/membraneframework/membrane_aac_fdk_plugin.svg?style=svg)](https://circleci.com/gh/membraneframework/membrane_aac_fdk_plugin)
 
 AAC decoder and encoder based on FDK library.
@@ -38,6 +40,7 @@ brew install fdk-aac
 ```
 ## Sample usage
 
+Encoder
 ```elixir
 defmodule AAC.Pipeline do
   use Membrane.Pipeline
@@ -55,6 +58,37 @@ defmodule AAC.Pipeline do
       link(:source)
       |> to(:parser)
       |> to(:aac_encoder)
+      |> to(:sink)
+    ]
+
+    {{:ok, spec: %ParentSpec{children: children, links: links}}, %{}}
+  end
+end
+```
+Decoder
+```elixir
+defmodule AAC.Pipeline do
+  use Membrane.Pipeline
+
+  @impl true
+  def handle_init(_) do
+    children = [
+      source: %Membrane.File.Source{location: "input.aac"},
+      aac_decoder: Membrane.AAC.FDK.Decoder,
+      converter: %Membrane.FFmpeg.SWResample.Converter{
+        output_caps: %Membrane.Caps.Audio.Raw{
+          format: :s16le,
+          sample_rate: 48000,
+          channels: 2
+        }
+      },
+      sink: Membrane.PortAudio.Sink
+    ]
+
+    links = [
+      link(:source)
+      |> to(:aac_decoder)
+      |> to(:converter)
       |> to(:sink)
     ]
 
