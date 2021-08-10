@@ -36,7 +36,32 @@ pacman -S libfdk-aac
 ```
 brew install fdk-aac
 ```
+## Sample usage
 
+```elixir
+defmodule AAC.Pipeline do
+  use Membrane.Pipeline
+
+  @impl true
+  def handle_init(_) do
+    children = [
+      source: %Membrane.File.Source{location: "input.wav"},
+      parser: Membrane.WAV.Parser,
+      aac_encoder: Membrane.AAC.FDK.Encoder,
+      sink: %Membrane.File.Sink{location: "output.aac"}
+    ]
+
+    links = [
+      link(:source)
+      |> to(:parser)
+      |> to(:aac_encoder)
+      |> to(:sink)
+    ]
+
+    {{:ok, spec: %ParentSpec{children: children, links: links}}, %{}}
+  end
+end
+```
 ## Copyright and License
 
 Copyright 2018, [Software Mansion](https://swmansion.com/?utm_source=git&utm_medium=readme&utm_campaign=membrane)
