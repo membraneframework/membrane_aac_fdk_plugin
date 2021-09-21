@@ -252,11 +252,12 @@ UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload,
     return encode_frame_result_error_no_data(env);
   }
 
-  UnifexPayload *out_payload =
-      unifex_payload_alloc(env, UNIFEX_PAYLOAD_BINARY, out_args.numOutBytes);
-  memcpy(out_payload->data, state->aac_buffer, out_args.numOutBytes);
-  res = encode_frame_result_ok(env, out_payload);
-  unifex_payload_release_ptr(&out_payload);
+  UnifexPayload out_payload;
+  unifex_payload_alloc(env, UNIFEX_PAYLOAD_BINARY, out_args.numOutBytes,
+                       &out_payload);
+  memcpy(out_payload.data, state->aac_buffer, out_args.numOutBytes);
+  res = encode_frame_result_ok(env, &out_payload);
+  unifex_payload_release(&out_payload);
   return res;
 }
 

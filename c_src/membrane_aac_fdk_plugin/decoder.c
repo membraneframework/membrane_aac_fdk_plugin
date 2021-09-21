@@ -128,12 +128,12 @@ UNIFEX_TERM decode_frame(UnifexEnv *env, UnifexPayload *in_payload,
 
   UINT out_payload_size =
       stream_info->frameSize * stream_info->numChannels * sizeof(INT_PCM);
-  UnifexPayload *out_payload =
-      unifex_payload_alloc(env, in_payload->type, out_payload_size);
-  memcpy(out_payload->data, state->decoder_buffer, out_payload_size);
+  UnifexPayload out_payload;
+  unifex_payload_alloc(env, in_payload->type, out_payload_size, &out_payload);
+  memcpy(out_payload.data, state->decoder_buffer, out_payload_size);
 
-  res = decode_frame_result_ok(env, out_payload);
-  unifex_payload_release_ptr(&out_payload);
+  res = decode_frame_result_ok(env, &out_payload);
+  unifex_payload_release(&out_payload);
   return res;
 }
 
