@@ -1,4 +1,5 @@
 # Membrane AAC FDK plugin
+
 [![Hex.pm](https://img.shields.io/hexpm/v/membrane_aac_fdk_plugin.svg)](https://hex.pm/packages/membrane_aac_fdk_plugin)
 [![API Docs](https://img.shields.io/badge/api-docs-yellow.svg?style=flat)](https://hexdocs.pm/membrane_aac_fdk_plugin/)
 [![CircleCI](https://circleci.com/gh/membraneframework/membrane_aac_fdk_plugin.svg?style=svg)](https://circleci.com/gh/membraneframework/membrane_aac_fdk_plugin)
@@ -16,7 +17,7 @@ The package can be installed by adding `membrane_aac_fdk_plugin` to your list of
 ```elixir
 def deps do
   [
-    {:membrane_aac_fdk_plugin, "~> 0.6.1"}
+    {:membrane_aac_fdk_plugin, "~> 0.8.0"}
   ]
 end
 ```
@@ -24,24 +25,30 @@ end
 This package depends on [FDK-AAC](https://github.com/mstorsjo/fdk-aac) library.
 
 ### Ubuntu
-(Make sure you have Multiverse repository enabled. See: https://help.ubuntu.com/community/Repositories/Ubuntu)
+
+(Make sure you have Multiverse repository enabled. See: <https://help.ubuntu.com/community/Repositories/Ubuntu>)
+
 ```
 sudo apt-get install libfdk-aac-dev
 ```
 
 ### Arch/Manjaro
+
 ```
 pacman -S libfdk-aac
 ```
 
 ### MacOS
+
 ```
 brew install fdk-aac
 ```
+
 ## Usage
 
 ### Encoder  
-The following pipeline takes wav file as input and encodes it as AAC. 
+
+The following pipeline takes wav file as input and encodes it as AAC.
 
 ```elixir
 defmodule AAC.Pipeline do
@@ -67,8 +74,11 @@ defmodule AAC.Pipeline do
   end
 end
 ```
+
 ### Decoder
-The following pipeline takes AAC file as input and plays it on speakers. 
+
+The following pipeline takes AAC file as input and plays it on speakers.
+
 ```elixir
 defmodule AAC.Pipeline do
   use Membrane.Pipeline
@@ -99,6 +109,7 @@ defmodule AAC.Pipeline do
   end
 end
 ```
+
 ## Copyright and License
 
 Copyright 2018, [Software Mansion](https://swmansion.com/?utm_source=git&utm_medium=readme&utm_campaign=membrane)
