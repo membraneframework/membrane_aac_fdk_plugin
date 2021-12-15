@@ -174,10 +174,11 @@ defmodule Membrane.AAC.FDK.Encoder do
   end
 
   @impl true
-  def handle_process(:input, %Buffer{payload: data}, _ctx, state) do
+  def handle_process_list(:input, buffers, _ctx, state) do
     %{native: native, queue: queue} = state
 
-    to_encode = queue <> data
+    data = buffers |> Enum.map(& &1.payload)
+    to_encode = [queue | data] |> IO.iodata_to_binary()
 
     raw_frame_size = aac_frame_size(state.aot) * state.input_caps.channels * @sample_size
 
