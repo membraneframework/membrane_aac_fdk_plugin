@@ -1,7 +1,7 @@
 defmodule Membrane.AAC.FDK.Plugin.MixProject do
   use Mix.Project
 
-  @version "0.8.0"
+  @version "0.8.1"
   @github_url "https://github.com/membraneframework/membrane_aac_fdk_plugin"
 
   def project do
@@ -42,7 +42,7 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
   defp package do
     [
       maintainers: ["Membrane Team"],
-      licenses: ["Apache 2.0"],
+      licenses: ["Apache-2.0"],
       links: %{
         "GitHub" => @github_url,
         "Membrane Framework Homepage" => "https://membraneframework.org"
