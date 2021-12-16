@@ -1,7 +1,7 @@
 defmodule Membrane.AAC.FDK.Plugin.MixProject do
   use Mix.Project
 
-  @version "0.9.0"
+  @version "0.9.1"
   @github_url "https://github.com/membraneframework/membrane_aac_fdk_plugin"
 
   def project do
@@ -42,7 +42,7 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
   defp package do
     [
       maintainers: ["Membrane Team"],
-      licenses: ["Apache 2.0"],
+      licenses: ["Apache-2.0"],
       links: %{
         "GitHub" => @github_url,
         "Membrane Framework Homepage" => "https://membraneframework.org"
@@ -53,14 +53,14 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
 
   defp deps do
     [
+      {:bunch, "~> 1.0"},
       {:membrane_core, "~> 0.8.0"},
       {:membrane_common_c, "~> 0.10.0"},
-      {:bunch, "~> 1.0"},
-      {:ex_doc, "~> 0.24", only: :dev, runtime: false},
-      {:dialyxir, "~> 1.1", only: [:dev], runtime: false},
       {:unifex, "~> 0.7.0"},
       {:membrane_caps_audio_raw, "~> 0.5.0"},
-      {:membrane_file_plugin, "~> 0.7.0", only: [:dev, :test]}
+      {:membrane_file_plugin, "~> 0.7.0", only: [:dev, :test]},
+      {:ex_doc, "~> 0.24", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.1", only: :dev, runtime: false}
     ]
   end
 end
