@@ -17,7 +17,7 @@ The package can be installed by adding `membrane_aac_fdk_plugin` to your list of
 ```elixir
 def deps do
   [
-    {:membrane_aac_fdk_plugin, "~> 0.9.0"}
+    {:membrane_aac_fdk_plugin, "~> 0.9"}
   ]
 end
 ```
