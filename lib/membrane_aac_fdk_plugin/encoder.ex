@@ -3,14 +3,15 @@ defmodule Membrane.AAC.FDK.Encoder do
   Element encoding raw audio into AAC format
   """
 
-  use Membrane.Filter
   use Bunch.Typespec
+  use Membrane.Filter
+
+  import Membrane.Logger
+
   alias __MODULE__.Native
   alias Membrane.Buffer
   alias Membrane.Caps.Audio.Raw
   alias Membrane.Caps.Matcher
-
-  use Membrane.Log, tags: :membrane_aac_fdk_plugin
 
   # AAC Constants
   @sample_size 2
@@ -28,17 +29,17 @@ defmodule Membrane.AAC.FDK.Encoder do
                :mpeg2_he
              ]
   @list_type allowed_sample_rates :: [
-               96000,
-               88200,
-               64000,
-               48000,
-               44100,
-               32000,
-               24000,
-               22050,
-               16000,
-               12000,
-               11025,
+               96_000,
+               88_200,
+               64_000,
+               48_000,
+               44_100,
+               32_000,
+               24_000,
+               22_050,
+               16_000,
+               12_000,
+               11_025,
                8000
              ]
   @list_type allowed_bitrate_modes :: [0, 1, 2, 3, 4, 5]
@@ -267,7 +268,7 @@ defmodule Membrane.AAC.FDK.Encoder do
 
   # Frame size is 2 times larger for HE profiles.
   defp aac_frame_size(aot) when aot in [:mpeg4_he, :mpeg4_he_v2, :mpeg2_he], do: 2048
-  defp aac_frame_size(_), do: 1024
+  defp aac_frame_size(_aot), do: 1024
 
   # Options validators
 
@@ -276,18 +277,18 @@ defmodule Membrane.AAC.FDK.Encoder do
   defp map_aot_to_value(:mpeg4_he_v2), do: {:ok, 29}
   defp map_aot_to_value(:mpeg2_lc), do: {:ok, 129}
   defp map_aot_to_value(:mpeg2_he), do: {:ok, 132}
-  defp map_aot_to_value(_), do: {:error, :invalid_aot}
+  defp map_aot_to_value(_aot), do: {:error, :invalid_aot}
 
   defp validate_channels(channels) when channels in @allowed_channels, do: {:ok, channels}
-  defp validate_channels(_), do: {:error, :invalid_channels}
+  defp validate_channels(_channels), do: {:error, :invalid_channels}
 
   defp validate_sample_rate(sample_rate) when sample_rate in @allowed_sample_rates,
     do: {:ok, sample_rate}
 
-  defp validate_sample_rate(_), do: {:error, :invalid_sample_rate}
+  defp validate_sample_rate(_sample_rate), do: {:error, :invalid_sample_rate}
 
   defp validate_bitrate_mode(bitrate_mode) when bitrate_mode in @allowed_bitrate_modes,
     do: {:ok, bitrate_mode}
 
-  defp validate_bitrate_mode(_), do: {:error, :invalid_bitrate_mode}
+  defp validate_bitrate_mode(_bitrate_mode), do: {:error, :invalid_bitrate_mode}
 end

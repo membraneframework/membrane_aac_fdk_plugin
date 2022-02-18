@@ -3,18 +3,19 @@ defmodule Membrane.AAC.FDK.Decoder do
   Element for decoding AAC audio to raw data in S16LE format.
   """
 
+  use Bunch
   use Membrane.Filter
+
   alias __MODULE__.Native
   alias Membrane.Buffer
   alias Membrane.Caps.Audio.Raw
-  use Bunch
 
   def_input_pad :input, caps: :any, demand_unit: :buffers
 
   def_output_pad :output, caps: {Raw, format: :s16le}
 
   @impl true
-  def handle_init(_) do
+  def handle_init(_opts) do
     {:ok, %{native: nil}}
   end
 
@@ -93,5 +94,5 @@ defmodule Membrane.AAC.FDK.Decoder do
     {:ok, caps: {:output, %Raw{format: :s16le, sample_rate: sample_rate, channels: channels}}}
   end
 
-  defp get_caps_if_needed(_, _), do: {:ok, []}
+  defp get_caps_if_needed(_caps, _state), do: {:ok, []}
 end

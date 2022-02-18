@@ -4,13 +4,13 @@ defmodule Membrane.AAC.FDK.EncoderTest do
   alias Membrane.Pipeline
   alias Membrane.AAC.FDK.Support.EncodingPipeline
 
-  def assert_files_equal(file_a, file_b) do
+  defp assert_files_equal(file_a, file_b) do
     assert {:ok, a} = File.read(file_a)
     assert {:ok, b} = File.read(file_b)
     assert a == b
   end
 
-  def prepare_paths(filename) do
+  defp prepare_paths(filename) do
     in_path = "test/fixtures/input-#{filename}.raw"
     reference_path = "test/fixtures/reference-#{filename}.aac"
     out_path = "/tmp/output-encoding-#{filename}.aac"
