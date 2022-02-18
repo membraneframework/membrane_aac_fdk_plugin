@@ -10,9 +10,9 @@ defmodule Membrane.AAC.FDK.Decoder do
   alias Membrane.Buffer
   alias Membrane.Caps.Audio.Raw
 
-  def_input_pad :input, caps: :any, demand_unit: :buffers
+  def_input_pad :input, caps: :any, demand_mode: :auto
 
-  def_output_pad :output, caps: {Raw, format: :s16le}
+  def_output_pad :output, caps: {Raw, format: :s16le}, demand_mode: :auto
 
   @impl true
   def handle_init(_opts) do
@@ -31,16 +31,6 @@ defmodule Membrane.AAC.FDK.Decoder do
   @impl true
   def handle_prepared_to_stopped(_ctx, state) do
     {:ok, %{state | native: nil}}
-  end
-
-  @impl true
-  def handle_demand(:output, size, :buffers, _ctx, state) do
-    {{:ok, demand: {:input, size}}, state}
-  end
-
-  @impl true
-  def handle_demand(:output, _size, :bytes, _ctx, state) do
-    {{:ok, demand: :input}, state}
   end
 
   @impl true
@@ -67,7 +57,7 @@ defmodule Membrane.AAC.FDK.Decoder do
          {:ok, caps_action} <- get_caps_if_needed(ctx.pads.output.caps, state) do
       buffer_actions = [buffer: {:output, decoded_frames}]
 
-      {{:ok, caps_action ++ buffer_actions ++ [redemand: :output]}, state}
+      {{:ok, caps_action ++ buffer_actions}, state}
     else
       {:error, reason} ->
         {{:error, reason}, state}

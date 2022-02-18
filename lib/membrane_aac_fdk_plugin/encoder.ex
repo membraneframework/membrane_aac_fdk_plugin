@@ -94,9 +94,9 @@ defmodule Membrane.AAC.FDK.Encoder do
                 default: nil
               ]
 
-  def_output_pad :output, caps: :any
+  def_output_pad :output, demand_mode: :auto, caps: :any
 
-  def_input_pad :input, demand_unit: :bytes, caps: @supported_caps
+  def_input_pad :input, demand_unit: :bytes, demand_mode: :auto, caps: @supported_caps
 
   @impl true
   def handle_init(options) do
@@ -141,16 +141,6 @@ defmodule Membrane.AAC.FDK.Encoder do
   end
 
   @impl true
-  def handle_demand(:output, size, :bytes, _ctx, state) do
-    {{:ok, demand: {:input, size}}, state}
-  end
-
-  @impl true
-  def handle_demand(:output, bufs, :buffers, _ctx, state) do
-    {{:ok, demand: {:input, aac_frame_size(state.aot) * bufs}}, state}
-  end
-
-  @impl true
   def handle_caps(:input, caps, _ctx, %{input_caps: input_caps} = state)
       when input_caps in [nil, caps] do
     with {:ok, native} <-
@@ -187,9 +177,7 @@ defmodule Membrane.AAC.FDK.Encoder do
            encode_buffer(to_encode, native, raw_frame_size) do
       <<_handled::binary-size(bytes_used), rest::binary>> = to_encode
 
-      buffer_actions = [buffer: {:output, encoded_buffers}]
-
-      {{:ok, buffer_actions ++ [redemand: :output]}, %{state | queue: rest}}
+      {{:ok, buffer: {:output, encoded_buffers}}, %{state | queue: rest}}
     else
       {:ok, {[], 0}} -> {:ok, %{state | queue: to_encode}}
       {:error, reason} -> {{:error, reason}, state}
