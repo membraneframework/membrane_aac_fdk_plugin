@@ -10,7 +10,7 @@ defmodule Membrane.AAC.FDK.Encoder do
 
   alias __MODULE__.Native
   alias Membrane.Buffer
-  alias Membrane.Caps.Audio.Raw
+  alias Membrane.RawAudio
   alias Membrane.Caps.Matcher
 
   # AAC Constants
@@ -44,8 +44,8 @@ defmodule Membrane.AAC.FDK.Encoder do
              ]
   @list_type allowed_bitrate_modes :: [0, 1, 2, 3, 4, 5]
 
-  @supported_caps {Raw,
-                   format: :s16le,
+  @supported_caps {RawAudio,
+                   sample_format: :s16le,
                    channels: Matcher.one_of(@allowed_channels),
                    sample_rate: Matcher.one_of(@allowed_sample_rates)}
 
@@ -90,7 +90,7 @@ defmodule Membrane.AAC.FDK.Encoder do
                 caps, they cannot be changed by caps received through the pad.
                 """,
                 type: :caps,
-                spec: Raw.t() | nil,
+                spec: RawAudio.t() | nil,
                 default: nil
               ]
 
@@ -117,7 +117,11 @@ defmodule Membrane.AAC.FDK.Encoder do
   def handle_stopped_to_prepared(_ctx, state) do
     input_caps =
       Map.merge(
-        %Raw{format: :s16le, channels: @default_channels, sample_rate: @default_sample_rate},
+        %RawAudio{
+          sample_format: :s16le,
+          channels: @default_channels,
+          sample_rate: @default_sample_rate
+        },
         state.input_caps
       )
 
