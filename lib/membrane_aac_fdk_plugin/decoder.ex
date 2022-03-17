@@ -8,11 +8,11 @@ defmodule Membrane.AAC.FDK.Decoder do
 
   alias __MODULE__.Native
   alias Membrane.Buffer
-  alias Membrane.Caps.Audio.Raw
+  alias Membrane.RawAudio
 
   def_input_pad :input, caps: :any, demand_mode: :auto
 
-  def_output_pad :output, caps: {Raw, format: :s16le}, demand_mode: :auto
+  def_output_pad :output, caps: {RawAudio, sample_format: :s16le}, demand_mode: :auto
 
   @impl true
   def handle_init(_opts) do
@@ -81,7 +81,10 @@ defmodule Membrane.AAC.FDK.Decoder do
 
   defp get_caps_if_needed(nil, state) do
     {:ok, {_frame_size, sample_rate, channels}} = Native.get_metadata(state.native)
-    {:ok, caps: {:output, %Raw{format: :s16le, sample_rate: sample_rate, channels: channels}}}
+
+    {:ok,
+     caps:
+       {:output, %RawAudio{sample_format: :s16le, sample_rate: sample_rate, channels: channels}}}
   end
 
   defp get_caps_if_needed(_caps, _state), do: {:ok, []}
