@@ -27,7 +27,7 @@ defmodule Membrane.AAC.FDK.Support.EncodingPipeline do
     end
 
     @impl true
-    def handle_process(:input, buffer, _ctx, state ) do
+    def handle_process(:input, buffer, _ctx, state) do
       {{:ok, buffer: {:output, buffer}}, state}
     end
   end
