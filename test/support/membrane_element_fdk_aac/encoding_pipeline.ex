@@ -22,7 +22,7 @@ defmodule Membrane.AAC.FDK.Support.EncodingPipeline do
     end
 
     @impl true
-    def handle_caps(:input, caps, _ctx, state) do
+    def handle_caps(:input, _caps, _ctx, state) do
       {{:ok, caps: {:output, state.caps}}, state}
     end
 
