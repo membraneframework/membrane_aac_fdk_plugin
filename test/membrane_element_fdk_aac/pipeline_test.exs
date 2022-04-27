@@ -25,7 +25,7 @@ defmodule Membrane.AAC.FDK.PipelineTest do
 
     assert Pipeline.play(pid) == :ok
     assert_end_of_stream(pid, :sink, :input, 3000)
-    Pipeline.stop_and_terminate(pid, blocking?: true)
+    Pipeline.terminate(pid, blocking?: true)
     assert_files_equal(out_path, reference_path)
   end
 

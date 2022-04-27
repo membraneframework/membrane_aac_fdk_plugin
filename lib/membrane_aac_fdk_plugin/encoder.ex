@@ -155,7 +155,7 @@ defmodule Membrane.AAC.FDK.Encoder do
              state.bitrate_mode,
              state.bitrate
            ) do
-      {:ok, %{state | native: native, input_caps: caps}}
+      {{:ok, caps: {:output, caps}}, %{state | native: native, input_caps: caps}}
     else
       {:error, reason} -> {{:error, reason}, state}
     end
