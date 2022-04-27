@@ -4,6 +4,7 @@ defmodule Membrane.AAC.FDK.Support.EncodingPipeline do
   alias Membrane.Testing.Pipeline
 
   defmodule CapsProvider do
+    @moduledoc false
     use Membrane.Filter
 
     def_options input_caps: [
