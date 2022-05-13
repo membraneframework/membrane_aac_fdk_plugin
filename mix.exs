@@ -18,7 +18,8 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
       source_url: @github_url,
       docs: docs(),
       homepage_url: "https://membraneframework.org",
-      deps: deps()
+      deps: deps(),
+      dialyzer: dialyzer()
     ]
   end
 
@@ -64,5 +65,19 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
       {:credo, "~> 1.6", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false}
     ]
+  end
+
+  defp dialyzer() do
+    opts = [
+      flags: [:error_handling]
+    ]
+
+    if System.get_env("CI") == "true" do
+      # Store PLTs in cacheable directory for CI
+      File.mkdir_p!(Path.join([__DIR__, "priv", "plts"]))
+      [plt_local_path: "priv/plts", plt_core_path: "priv/plts"] ++ opts
+    else
+      opts
+    end
   end
 end
