@@ -10,8 +10,8 @@ defmodule Membrane.AAC.FDK.Encoder do
 
   alias __MODULE__.Native
   alias Membrane.Buffer
-  alias Membrane.RawAudio
   alias Membrane.Caps.Matcher
+  alias Membrane.RawAudio
 
   # AAC Constants
   @sample_size 2
