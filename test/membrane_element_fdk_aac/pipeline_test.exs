@@ -21,10 +21,9 @@ defmodule Membrane.AAC.FDK.PipelineTest do
 
   defp test_file(pipeline, file_in, file_out) do
     {in_path, reference_path, out_path} = prepare_paths(file_in, file_out)
-    assert {:ok, pid} = pipeline.make_pipeline(in_path, out_path)
+    assert pid = pipeline.make_pipeline(in_path, out_path)
 
     assert_end_of_stream(pid, :sink, :input, 3000)
-    Pipeline.terminate(pid, blocking?: true)
     assert_files_equal(out_path, reference_path)
   end
 

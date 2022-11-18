@@ -9,25 +9,24 @@ defmodule Membrane.AAC.FDK.EncoderTest do
   defp assert_files_equal(file_a, file_b) do
     assert {:ok, a} = File.read(file_a)
     assert {:ok, b} = File.read(file_b)
+    assert byte_size(a) == byte_size(b)
     assert a == b
   end
 
-  defp prepare_paths(filename) do
+  defp prepare_paths(filename, tmp_dir) do
     in_path = "test/fixtures/input-#{filename}.raw"
     reference_path = "test/fixtures/reference-#{filename}.aac"
-    out_path = "/tmp/output-encoding-#{filename}.aac"
-    File.rm(out_path)
-    on_exit(fn -> File.rm(out_path) end)
+    out_path = Path.join(tmp_dir, "output-encoding-#{filename}.aac")
     {in_path, reference_path, out_path}
   end
 
+  @tag :tmp_dir
   describe "Encoding Pipeline should" do
-    test "Encode AAC file" do
-      {in_path, reference_path, out_path} = prepare_paths("encoder")
-      assert {:ok, pid} = EncodingPipeline.make_pipeline(in_path, out_path)
+    test "Encode AAC file", ctx do
+      {in_path, reference_path, out_path} = prepare_paths("encoder", ctx.tmp_dir)
+      assert pid = EncodingPipeline.make_pipeline(in_path, out_path)
 
       assert_end_of_stream(pid, :sink, :input, 3000)
-      Pipeline.terminate(pid, blocking?: true)
       assert_files_equal(out_path, reference_path)
     end
   end

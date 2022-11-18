@@ -3,53 +3,51 @@ defmodule Membrane.AAC.FDK.Support.EncodingPipeline do
 
   alias Membrane.Testing.Pipeline
 
-  defmodule CapsProvider do
+  defmodule FormatProvider do
     @moduledoc false
     use Membrane.Filter
 
-    def_options input_caps: [
+    def_options input_format: [
                   description:
-                    "Caps which will be sent on the :output pad once the :input pad receives any caps",
-                  type: :caps
+                    "Format which will be sent on the :output pad once the :input pad receives any stream format info",
+                  spec: struct()
                 ]
 
-    def_output_pad :output, demand_mode: :auto, caps: :any
+    def_output_pad :output, demand_mode: :auto, accepted_format: Membrane.RawAudio
 
-    def_input_pad :input, demand_unit: :bytes, demand_mode: :auto, caps: :any
+    def_input_pad :input,
+      demand_unit: :bytes,
+      demand_mode: :auto,
+      accepted_format: Membrane.RemoteStream
 
     @impl true
-    def handle_init(opts) do
-      {:ok, %{caps: opts.input_caps}}
+    def handle_stream_format(:input, _format, _ctx, state) do
+      {[stream_format: {:output, state.input_format}], state}
     end
 
     @impl true
-    def handle_caps(:input, _caps, _ctx, state) do
-      {{:ok, caps: {:output, state.caps}}, state}
-    end
-
-    @impl true
-    def handle_process(:input, buffer, _ctx, state) do
-      {{:ok, buffer: {:output, buffer}}, state}
+    def handle_process_list(:input, buffers, _ctx, state) do
+      {[buffer: {:output, buffers}], state}
     end
   end
 
-  @spec make_pipeline(Path.t(), Path.t()) :: GenServer.on_start()
+  @spec make_pipeline(Path.t(), Path.t()) :: pid()
   def make_pipeline(in_path, out_path) do
-    Pipeline.start_link(%Pipeline.Options{
-      elements: [
-        file_src: %Membrane.File.Source{location: in_path},
-        caps_provider: %CapsProvider{
-          input_caps: %Membrane.RawAudio{
+    import Membrane.ChildrenSpec
+
+    Pipeline.start_link_supervised!(
+      structure: [
+        child(:file_src, %Membrane.File.Source{location: in_path})
+        |> child(:format_provider, %FormatProvider{
+          input_format: %Membrane.RawAudio{
             sample_format: :s16le,
             channels: 2,
             sample_rate: 44_100
           }
-        },
-        encoder: %Membrane.AAC.FDK.Encoder{
-          input_caps: %{sample_rate: 44_100, channels: 2}
-        },
-        sink: %Membrane.File.Sink{location: out_path}
+        })
+        |> child(:encoder, Membrane.AAC.FDK.Encoder)
+        |> child(:sink, %Membrane.File.Sink{location: out_path})
       ]
-    })
+    )
   end
 end

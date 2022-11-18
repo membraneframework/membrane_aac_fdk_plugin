@@ -3,14 +3,16 @@ defmodule Membrane.AAC.FDK.Support.DecodingPipeline do
 
   alias Membrane.Testing.Pipeline
 
-  @spec make_pipeline(Path.t(), Path.t()) :: GenServer.on_start()
+  @spec make_pipeline(Path.t(), Path.t()) :: pid()
   def make_pipeline(in_path, out_path) do
-    Pipeline.start_link(%Pipeline.Options{
-      elements: [
-        file_src: %Membrane.File.Source{location: in_path},
-        decoder: Membrane.AAC.FDK.Decoder,
-        sink: %Membrane.File.Sink{location: out_path}
+    import Membrane.ChildrenSpec
+
+    Pipeline.start_link_supervised!(
+      structure: [
+        child(:file_src, %Membrane.File.Source{location: in_path})
+        |> child(:decoder, Membrane.AAC.FDK.Decoder)
+        |> child(:sink, %Membrane.File.Sink{location: out_path})
       ]
-    })
+    )
   end
 end

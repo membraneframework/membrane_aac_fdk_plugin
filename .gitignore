@@ -145,7 +145,7 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-
+tmp
 compile_commands.json
 .elixir_ls
 .gdb_history
