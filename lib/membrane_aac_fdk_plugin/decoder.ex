@@ -10,32 +10,27 @@ defmodule Membrane.AAC.FDK.Decoder do
   alias Membrane.Buffer
   alias Membrane.RawAudio
 
-  def_input_pad :input, caps: :any, demand_mode: :auto
+  def_input_pad :input, accepted_format: _any, demand_mode: :auto
 
-  def_output_pad :output, caps: {RawAudio, sample_format: :s16le}, demand_mode: :auto
+  def_output_pad :output, accepted_format: %RawAudio{sample_format: :s16le}, demand_mode: :auto
 
   @impl true
-  def handle_init(_opts) do
-    {:ok, %{native: nil}}
+  def handle_init(_ctx, _opts) do
+    {[], %{native: nil}}
   end
 
   @impl true
-  def handle_stopped_to_prepared(_ctx, state) do
+  def handle_setup(_ctx, state) do
     with {:ok, native} <- Native.create() do
-      {:ok, %{state | native: native}}
+      {[], %{state | native: native}}
     else
-      {:error, reason} -> {{:error, reason}, state}
+      {:error, reason} -> raise "Error: #{inspect(reason)}"
     end
   end
 
   @impl true
-  def handle_prepared_to_stopped(_ctx, state) do
-    {:ok, %{state | native: nil}}
-  end
-
-  @impl true
-  def handle_caps(:input, _caps, _ctx, state) do
-    {:ok, state}
+  def handle_stream_format(:input, _stream_format, _ctx, state) do
+    {[], state}
   end
 
   # Handles parsing buffer payload to raw audio frames.
@@ -46,21 +41,22 @@ defmodule Membrane.AAC.FDK.Decoder do
   # Since the input buffer can contain more than one frame,
   # we're calling `decode_frame` until it returns `:not_enough_bits`
   # to ensure we're emptying the whole native buffer.
-  # 3. Set output caps based on the stream metadata.
-  # This should execute only once when output caps are not specified yet,
+  # 3. Set output stream_format based on the stream metadata.
+  # This should execute only once when output stream_format are not specified yet,
   # since they should stay consistent for the whole stream.
   # 4. In case an unhandled error is returned during this flow, returns error message.
   @impl true
   def handle_process(:input, %Buffer{payload: payload}, ctx, state) do
     with :ok <- Native.fill(payload, state.native),
          {:ok, decoded_frames} <- decode_buffer(payload, state.native),
-         {:ok, caps_action} <- get_caps_if_needed(ctx.pads.output.caps, state) do
+         {:ok, stream_format_action} <-
+           get_stream_format_if_needed(ctx.pads.output.stream_format, state) do
       buffer_actions = [buffer: {:output, decoded_frames}]
 
-      {{:ok, caps_action ++ buffer_actions}, state}
+      {stream_format_action ++ buffer_actions, state}
     else
       {:error, reason} ->
-        {{:error, reason}, state}
+        raise "Error: #{inspect(reason)}"
     end
   end
 
@@ -79,13 +75,13 @@ defmodule Membrane.AAC.FDK.Decoder do
     end
   end
 
-  defp get_caps_if_needed(nil, state) do
+  defp get_stream_format_if_needed(nil, state) do
     {:ok, {_frame_size, sample_rate, channels}} = Native.get_metadata(state.native)
 
     {:ok,
-     caps:
+     stream_format:
        {:output, %RawAudio{sample_format: :s16le, sample_rate: sample_rate, channels: channels}}}
   end
 
-  defp get_caps_if_needed(_caps, _state), do: {:ok, []}
+  defp get_stream_format_if_needed(_stream_format, _state), do: {:ok, []}
 end

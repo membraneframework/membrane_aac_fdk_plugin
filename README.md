@@ -89,7 +89,7 @@ defmodule AAC.Pipeline do
       source: %Membrane.File.Source{location: "input.aac"},
       aac_decoder: Membrane.AAC.FDK.Decoder,
       converter: %Membrane.FFmpeg.SWResample.Converter{
-        output_caps: %Membrane.Caps.Audio.Raw{
+        output_stream_format: %Membrane.Caps.Audio.Raw{
           format: :s16le,
           sample_rate: 48000,
           channels: 2

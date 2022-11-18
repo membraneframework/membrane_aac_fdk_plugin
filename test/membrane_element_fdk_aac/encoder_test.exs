@@ -24,7 +24,7 @@ defmodule Membrane.AAC.FDK.EncoderTest do
   describe "Encoding Pipeline should" do
     test "Encode AAC file" do
       {in_path, reference_path, out_path} = prepare_paths("encoder")
-      assert {:ok, pid} = EncodingPipeline.make_pipeline(in_path, out_path)
+      assert {:ok, _supervisor_pid, pid} = EncodingPipeline.make_pipeline(in_path, out_path)
 
       assert_end_of_stream(pid, :sink, :input, 3000)
       Pipeline.terminate(pid, blocking?: true)

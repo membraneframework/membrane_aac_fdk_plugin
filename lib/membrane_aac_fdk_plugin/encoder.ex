@@ -10,7 +10,6 @@ defmodule Membrane.AAC.FDK.Encoder do
 
   alias __MODULE__.Native
   alias Membrane.Buffer
-  alias Membrane.Caps.Matcher
   alias Membrane.RawAudio
 
   # AAC Constants
@@ -20,34 +19,35 @@ defmodule Membrane.AAC.FDK.Encoder do
   @default_sample_rate 44_100
   # MPEG-4 AAC Low Complexity
   @default_audio_object_type :mpeg4_lc
-  @list_type allowed_channels :: [1, 2]
-  @list_type allowed_aots :: [
-               :mpeg4_lc,
-               :mpeg4_he,
-               :mpeg4_he_v2,
-               :mpeg2_lc,
-               :mpeg2_he
-             ]
-  @list_type allowed_sample_rates :: [
-               96_000,
-               88_200,
-               64_000,
-               48_000,
-               44_100,
-               32_000,
-               24_000,
-               22_050,
-               16_000,
-               12_000,
-               11_025,
-               8000
-             ]
-  @list_type allowed_bitrate_modes :: [0, 1, 2, 3, 4, 5]
+  @allowed_channels [1, 2]
+  @allowed_aots [
+    :mpeg4_lc,
+    :mpeg4_he,
+    :mpeg4_he_v2,
+    :mpeg2_lc,
+    :mpeg2_he
+  ]
+  @allowed_sample_rates [
+    96_000,
+    88_200,
+    64_000,
+    48_000,
+    44_100,
+    32_000,
+    24_000,
+    22_050,
+    16_000,
+    12_000,
+    11_025,
+    8000
+  ]
+  @allowed_bitrate_modes [0, 1, 2, 3, 4, 5]
 
-  @supported_caps {RawAudio,
-                   sample_format: :s16le,
-                   channels: Matcher.one_of(@allowed_channels),
-                   sample_rate: Matcher.one_of(@allowed_sample_rates)}
+  @type allowed_channels :: unquote(Bunch.Typespec.enum_to_alternative(@allowed_channels))
+  @type allowed_aots :: unquote(Bunch.Typespec.enum_to_alternative(@allowed_aots))
+  @type allowed_sample_rates :: unquote(Bunch.Typespec.enum_to_alternative(@allowed_sample_rates))
+  @type allowed_bitrate_modes ::
+          unquote(Bunch.Typespec.enum_to_alternative(@allowed_bitrate_modes))
 
   def_options aot: [
                 description: """
@@ -83,23 +83,32 @@ defmodule Membrane.AAC.FDK.Encoder do
                 spec: pos_integer() | nil,
                 default: nil
               ],
-              input_caps: [
+              input_stream_format: [
                 description: """
-                Caps for the input pad. If set to nil (default value),
-                caps are assumed to be received through the pad. If explicitly set to some
-                caps, they cannot be changed by caps received through the pad.
+                Stream_format for the input pad. If set to nil (default value),
+                stream_format is assumed to be received through the pad. If explicitly set to some
+                stream_format, it cannot be changed by stream_format received through the pad.
                 """,
-                type: :caps,
+                type: :stream_format,
                 spec: RawAudio.t() | nil,
                 default: nil
               ]
 
-  def_output_pad :output, demand_mode: :auto, caps: :any
+  def_output_pad :output, demand_mode: :auto, accepted_format: _any
 
-  def_input_pad :input, demand_unit: :bytes, demand_mode: :auto, caps: @supported_caps
+  def_input_pad :input,
+    demand_unit: :bytes,
+    demand_mode: :auto,
+    accepted_format:
+      %RawAudio{
+        sample_format: :s16le,
+        channels: channels,
+        sample_rate: sample_rate
+      }
+      when channels in @allowed_channels and sample_rate in @allowed_sample_rates
 
   @impl true
-  def handle_init(options) do
+  def handle_init(_ctx, options) do
     state =
       options
       |> Map.from_struct()
@@ -108,63 +117,66 @@ defmodule Membrane.AAC.FDK.Encoder do
         queue: <<>>
       })
 
-    {:ok, state}
+    {[], state}
   end
 
   @impl true
-  def handle_stopped_to_prepared(_ctx, %{input_caps: nil} = state), do: {:ok, state}
+  def handle_setup(_ctx, %{input_stream_format: nil} = state), do: {[], state}
 
-  def handle_stopped_to_prepared(_ctx, state) do
-    input_caps =
+  def handle_setup(_ctx, state) do
+    input_stream_format =
       Map.merge(
         %RawAudio{
           sample_format: :s16le,
           channels: @default_channels,
           sample_rate: @default_sample_rate
         },
-        state.input_caps
+        state.input_stream_format
       )
 
     with {:ok, native} <-
            mk_native(
-             input_caps.channels,
-             input_caps.sample_rate,
+             input_stream_format.channels,
+             input_stream_format.sample_rate,
              state.aot,
              state.bitrate_mode,
              state.bitrate
            ) do
-      {:ok, %{state | native: native, input_caps: input_caps}}
+      {[], %{state | native: native, input_stream_format: input_stream_format}}
     else
-      {:error, reason} -> {{:error, reason}, state}
+      {:error, reason} -> raise "Error: #{inspect(reason)}"
     end
   end
 
   @impl true
-  def handle_prepared_to_stopped(_ctx, state) do
-    {:ok, %{state | native: nil}}
-  end
-
-  @impl true
-  def handle_caps(:input, caps, _ctx, %{input_caps: input_caps} = state)
-      when input_caps in [nil, caps] do
+  def handle_stream_format(
+        :input,
+        stream_format,
+        _ctx,
+        %{input_stream_format: input_stream_format} = state
+      )
+      when input_stream_format in [nil, stream_format] do
     with {:ok, native} <-
            mk_native(
-             caps.channels,
-             caps.sample_rate,
+             stream_format.channels,
+             stream_format.sample_rate,
              state.aot,
              state.bitrate_mode,
              state.bitrate
            ) do
-      {{:ok, caps: {:output, caps}}, %{state | native: native, input_caps: caps}}
+      {[stream_format: {:output, stream_format}],
+       %{state | native: native, input_stream_format: stream_format}}
     else
       {:error, reason} -> {{:error, reason}, state}
     end
   end
 
-  def handle_caps(:input, caps, _ctx, %{input_caps: stored_caps}) do
+  def handle_stream_format(:input, stream_format, _ctx, %{
+        input_stream_format: stored_stream_format
+      }) do
     raise """
-    Received caps #{inspect(caps)} are different than defined in options #{inspect(stored_caps)}.
-    If you want to allow converter to accept different input caps dynamically, use `nil` as input_caps.
+    Received stream_format #{inspect(stream_format)} are different than defined in options #{inspect(stored_stream_format)}.
+    If you want to allow converter to accept different input stream_format dynamically, use `nil` as input_stream_format.
     """
   end
 
@@ -175,16 +187,16 @@ defmodule Membrane.AAC.FDK.Encoder do
     data = buffers |> Enum.map(& &1.payload)
     to_encode = [queue | data] |> IO.iodata_to_binary()
 
-    raw_frame_size = aac_frame_size(state.aot) * state.input_caps.channels * @sample_size
+    raw_frame_size = aac_frame_size(state.aot) * state.input_stream_format.channels * @sample_size
 
     with {:ok, {encoded_buffers, bytes_used}} when bytes_used > 0 <-
            encode_buffer(to_encode, native, raw_frame_size) do
       <<_handled::binary-size(bytes_used), rest::binary>> = to_encode
 
-      {{:ok, buffer: {:output, encoded_buffers}}, %{state | queue: rest}}
+      {[buffer: {:output, encoded_buffers}], %{state | queue: rest}}
     else
-      {:ok, {[], 0}} -> {:ok, %{state | queue: to_encode}}
-      {:error, reason} -> {{:error, reason}, state}
+      {:ok, {[], 0}} -> {[], %{state | queue: to_encode}}
+      {:error, reason} -> raise "Error: #{inspect(reason)}"
     end
   end
 
@@ -195,18 +207,18 @@ defmodule Membrane.AAC.FDK.Encoder do
     if queue != <<>>,
       do: warn("Processing queue is not empty, but EndOfStream event was received")
 
-    actions = [end_of_stream: :output, notify: {:end_of_stream, :input}]
+    actions = [end_of_stream: :output, notify_parent: {:end_of_stream, :input}]
 
     with {:ok, encoded_frame} <- Native.encode_frame(<<>>, native) do
       buffer_actions = [buffer: {:output, %Buffer{payload: encoded_frame}}]
 
-      {{:ok, buffer_actions ++ actions}, state}
+      {buffer_actions ++ actions, state}
     else
       {:error, :no_data} ->
-        {{:ok, actions}, state}
+        {actions, state}
 
       {:error, reason} ->
-        {{:error, reason}, state}
+        raise "Error: #{inspect(reason)}"
     end
   end
 
