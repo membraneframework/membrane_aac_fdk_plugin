@@ -17,7 +17,7 @@ The package can be installed by adding `membrane_aac_fdk_plugin` to your list of
 ```elixir
 def deps do
   [
-	{:membrane_aac_fdk_plugin, "~> 0.13.0"}
+    {:membrane_aac_fdk_plugin, "~> 0.13.0"}
   ]
 end
 ```
@@ -51,28 +51,25 @@ brew install fdk-aac
 The following pipeline takes wav file as input and encodes it as AAC.
 
 ```elixir
+Mix.install([:membrane_file_plugin, :membrane_wav_plugin, :membrane_aac_fdk_plugin])
+
 defmodule AAC.Pipeline do
   use Membrane.Pipeline
 
   @impl true
-  def handle_init(_) do
-    children = [
-      source: %Membrane.File.Source{location: "input.wav"},
-      parser: Membrane.WAV.Parser,
-      aac_encoder: Membrane.AAC.FDK.Encoder,
-      sink: %Membrane.File.Sink{location: "output.aac"}
+  def handle_init(_ctx, _opts) do
+    structure = [
+      child(:source, %Membrane.File.Source{location: "input.wav"})
+      |> child(:parser, Membrane.WAV.Parser)
+      |> child(:aac_encoder, Membrane.AAC.FDK.Encoder)
+      |> child(:sink, %Membrane.File.Sink{location: "output.aac"})
     ]
 
-    links = [
-      link(:source)
-      |> to(:parser)
-      |> to(:aac_encoder)
-      |> to(:sink)
-    ]
-
-    {{:ok, spec: %ParentSpec{children: children, links: links}}, %{}}
+    {[spec: structure, playback: :playing], %{}}
   end
 end
+
+{:ok, _pipeline_supervisor, _pipeline} = AAC.Pipeline.start_link([])
 ```
 
 ### Decoder
@@ -80,34 +77,36 @@ end
 The following pipeline takes AAC file as input and plays it on speakers.
 
 ```elixir
+Mix.install([
+  :membrane_file_plugin,
+  :membrane_ffmpeg_swresample_plugin,
+  :membrane_aac_fdk_plugin, 
+  :membrane_portaudio_plugin
+])
+
 defmodule AAC.Pipeline do
   use Membrane.Pipeline
 
   @impl true
-  def handle_init(_) do
-    children = [
-      source: %Membrane.File.Source{location: "input.aac"},
-      aac_decoder: Membrane.AAC.FDK.Decoder,
-      converter: %Membrane.FFmpeg.SWResample.Converter{
-        output_caps: %Membrane.Caps.Audio.Raw{
-          format: :s16le,
+  def handle_init(_ctx, _opts) do
+    structure = [
+      child(:source, %Membrane.File.Source{location: "input.aac"})
+      |> child(:aac_decoder, Membrane.AAC.FDK.Decoder)
+      |> child(:converter, %Membrane.FFmpeg.SWResample.Converter{
+        output_stream_format: %Membrane.RawAudio{
+          sample_format: :s16le,
           sample_rate: 48000,
           channels: 2
         }
-      },
-      sink: Membrane.PortAudio.Sink
+      })
+      |> child(:sink, Membrane.PortAudio.Sink)
     ]
 
-    links = [
-      link(:source)
-      |> to(:aac_decoder)
-      |> to(:converter)
-      |> to(:sink)
-    ]
-
-    {{:ok, spec: %ParentSpec{children: children, links: links}}, %{}}
+    {[spec: structure, playback: :playing], %{}}
   end
 end
+
+{:ok, _pipeline_supervisor, _pipeline} = AAC.Pipeline.start_link([])
 ```
 
 ## Copyright and License
