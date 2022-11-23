@@ -7,10 +7,11 @@ defmodule Membrane.AAC.FDK.Decoder do
   use Membrane.Filter
 
   alias __MODULE__.Native
+  alias Membrane.AAC
   alias Membrane.Buffer
   alias Membrane.RawAudio
 
-  def_input_pad :input, accepted_format: Membrane.RemoteStream, demand_mode: :auto
+  def_input_pad :input, accepted_format: any_of(Membrane.RemoteStream, AAC), demand_mode: :auto
 
   def_output_pad :output, accepted_format: %RawAudio{sample_format: :s16le}, demand_mode: :auto
 

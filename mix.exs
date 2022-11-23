@@ -59,7 +59,7 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
       {:membrane_core, "~> 0.11.0"},
       {:membrane_common_c, "~> 0.14.0"},
       {:unifex, "~> 1.0"},
-      {:membrane_raw_audio_format, "~> 0.10.0", github: "membraneframework/membrane_raw_audio_format", branch: "core-v0.11"},
+      {:membrane_raw_audio_format, "~> 0.10.0"},
       {:membrane_aac_format, "~> 0.7"},
       {:membrane_file_plugin, "~> 0.13.0", only: :test},
       {:ex_doc, "~> 0.28", only: :dev, runtime: false},
