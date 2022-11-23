@@ -22,11 +22,7 @@ defmodule Membrane.AAC.FDK.Decoder do
 
   @impl true
   def handle_setup(_ctx, state) do
-    with {:ok, native} <- Native.create() do
-      {[], %{state | native: native}}
-    else
-      {:error, reason} -> raise "Cannot create native decoder: #{inspect(reason)}"
-    end
+    {[], %{state | native: Native.create!()}}
   end
 
   @impl true
