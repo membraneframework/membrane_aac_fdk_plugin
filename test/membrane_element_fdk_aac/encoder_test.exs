@@ -4,7 +4,6 @@ defmodule Membrane.AAC.FDK.EncoderTest do
   import Membrane.Testing.Assertions
 
   alias Membrane.AAC.FDK.Support.EncodingPipeline
-  alias Membrane.Pipeline
 
   defp assert_files_equal(file_a, file_b) do
     assert {:ok, a} = File.read(file_a)
