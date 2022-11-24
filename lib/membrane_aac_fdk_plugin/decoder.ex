@@ -36,7 +36,7 @@ defmodule Membrane.AAC.FDK.Decoder do
   # Handles parsing buffer payload to raw audio frames.
   #
   # The flow is as follows:
-  # 1. Fill the native buffer using `Native.fill` with input buffer content
+  # 1. Fill the native buffer using `Native.fill!` with input buffer content
   # 2. Natively decode audio frames using `Native.decode_frame`.
   # Since the input buffer can contain more than one frame,
   # we're calling `decode_frame` until it returns `:not_enough_bits`
@@ -48,7 +48,7 @@ defmodule Membrane.AAC.FDK.Decoder do
   @impl true
   def handle_process(:input, %Buffer{payload: payload}, ctx, state) do
     :ok = Native.fill!(payload, state.native)
-    decoded_frames = decode_buffer(payload, state.native)
+    decoded_frames = decode_buffer!(payload, state.native)
 
     format_action = get_format_if_needed(ctx.pads.output.stream_format, state)
     buffer_actions = [buffer: {:output, decoded_frames}]
@@ -56,11 +56,11 @@ defmodule Membrane.AAC.FDK.Decoder do
     {format_action ++ buffer_actions, state}
   end
 
-  defp decode_buffer(payload, native, acc \\ []) do
+  defp decode_buffer!(payload, native, acc \\ []) do
     case Native.decode_frame(payload, native) do
       {:ok, decoded_frame} ->
         # Accumulate decoded frames
-        decode_buffer(payload, native, [%Buffer{payload: decoded_frame} | acc])
+        decode_buffer!(payload, native, [%Buffer{payload: decoded_frame} | acc])
 
       {:error, :not_enough_bits} ->
         # Means that we've parsed the whole buffer.
