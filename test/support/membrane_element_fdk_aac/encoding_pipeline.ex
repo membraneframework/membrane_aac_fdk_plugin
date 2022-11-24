@@ -36,7 +36,7 @@ defmodule Membrane.AAC.FDK.Support.EncodingPipeline do
     import Membrane.ChildrenSpec
 
     Pipeline.start_link_supervised!(
-      structure: [
+      structure:
         child(:file_src, %Membrane.File.Source{location: in_path})
         |> child(:format_provider, %FormatProvider{
           input_format: %Membrane.RawAudio{
@@ -47,7 +47,6 @@ defmodule Membrane.AAC.FDK.Support.EncodingPipeline do
         })
         |> child(:encoder, Membrane.AAC.FDK.Encoder)
         |> child(:sink, %Membrane.File.Sink{location: out_path})
-      ]
     )
   end
 end

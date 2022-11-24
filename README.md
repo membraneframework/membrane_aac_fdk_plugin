@@ -58,12 +58,11 @@ defmodule AAC.Pipeline do
 
   @impl true
   def handle_init(_ctx, _opts) do
-    structure = [
+    structure = 
       child(:source, %Membrane.File.Source{location: "input.wav"})
       |> child(:parser, Membrane.WAV.Parser)
       |> child(:aac_encoder, Membrane.AAC.FDK.Encoder)
       |> child(:sink, %Membrane.File.Sink{location: "output.aac"})
-    ]
 
     {[spec: structure, playback: :playing], %{}}
   end
@@ -89,7 +88,7 @@ defmodule AAC.Pipeline do
 
   @impl true
   def handle_init(_ctx, _opts) do
-    structure = [
+    structure =
       child(:source, %Membrane.File.Source{location: "input.aac"})
       |> child(:aac_decoder, Membrane.AAC.FDK.Decoder)
       |> child(:converter, %Membrane.FFmpeg.SWResample.Converter{
@@ -100,7 +99,6 @@ defmodule AAC.Pipeline do
         }
       })
       |> child(:sink, Membrane.PortAudio.Sink)
-    ]
 
     {[spec: structure, playback: :playing], %{}}
   end

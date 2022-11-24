@@ -8,11 +8,10 @@ defmodule Membrane.AAC.FDK.Support.DecodingPipeline do
     import Membrane.ChildrenSpec
 
     Pipeline.start_link_supervised!(
-      structure: [
+      structure:
         child(:file_src, %Membrane.File.Source{location: in_path})
         |> child(:decoder, Membrane.AAC.FDK.Decoder)
         |> child(:sink, %Membrane.File.Sink{location: out_path})
-      ]
     )
   end
 end
