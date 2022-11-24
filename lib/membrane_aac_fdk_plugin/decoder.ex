@@ -11,9 +11,12 @@ defmodule Membrane.AAC.FDK.Decoder do
   alias Membrane.Buffer
   alias Membrane.RawAudio
 
-  def_input_pad :input, accepted_format: any_of(Membrane.RemoteStream, AAC), demand_mode: :auto
+  def_input_pad :input,
+    demand_mode: :auto,
+    accepted_format:
+      any_of(AAC, %Membrane.RemoteStream{content_format: format} when format in [AAC, nil])
 
-  def_output_pad :output, accepted_format: %RawAudio{sample_format: :s16le}, demand_mode: :auto
+  def_output_pad :output, demand_mode: :auto, accepted_format: %RawAudio{sample_format: :s16le}
 
   @impl true
   def handle_init(_ctx, _opts) do
