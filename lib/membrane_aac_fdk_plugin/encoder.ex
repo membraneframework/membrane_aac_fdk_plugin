@@ -113,36 +113,32 @@ defmodule Membrane.AAC.FDK.Encoder do
 
   @impl true
   def handle_stream_format(:input, format, _ctx, state) do
-    with {:ok, native} <-
-           mk_native(
-             format.channels,
-             format.sample_rate,
-             state.aot,
-             state.bitrate_mode,
-             state.bitrate
-           ) do
-      {:ok, aot} = map_aot_to_value(state.aot)
+    native =
+      mk_native!(
+        format.channels,
+        format.sample_rate,
+        state.aot,
+        state.bitrate_mode,
+        state.bitrate
+      )
 
-      {profile, mpeg_version} =
-        case state.aot do
-          # TODO: Change when AAC format receives support for mpeg2 aot ids
-          :mpeg2_lc -> {:LC, 2}
-          :mpeg2_he -> {:HE, 2}
-          _mpeg4_aot -> {AAC.aot_id_to_profile(aot), 4}
-        end
+    {profile, mpeg_version} =
+      case state.aot do
+        # TODO: Change when AAC format receives support for mpeg2 aot ids
+        :mpeg2_lc -> {:LC, 2}
+        :mpeg2_he -> {:HE, 2}
+        mpeg4_aot -> {AAC.aot_id_to_profile(map_aot_to_value!(mpeg4_aot)), 4}
+      end
 
-      out_format = %AAC{
-        profile: profile,
-        sample_rate: format.sample_rate,
-        channels: format.channels,
-        mpeg_version: mpeg_version,
-        encapsulation: :ADTS
-      }
+    out_format = %AAC{
+      profile: profile,
+      sample_rate: format.sample_rate,
+      channels: format.channels,
+      mpeg_version: mpeg_version,
+      encapsulation: :ADTS
+    }
 
-      {[stream_format: {:output, out_format}], %{state | native: native}}
-    else
-      {:error, reason} -> {{:error, reason}, state}
-    end
+    {[stream_format: {:output, out_format}], %{state | native: native}}
   end
 
   @impl true
@@ -210,22 +206,22 @@ defmodule Membrane.AAC.FDK.Encoder do
     {acc |> Enum.reverse(), bytes_used}
   end
 
-  defp mk_native(channels, sample_rate, aot, bitrate_mode, bitrate) do
-    with {:ok, channels} <- validate_channels(channels),
-         {:ok, sample_rate} <- validate_sample_rate(sample_rate),
-         {:ok, aot} <- map_aot_to_value(aot),
-         {:ok, bitrate_mode} <- validate_bitrate_mode(bitrate_mode),
-         {:ok, native} <-
-           Native.create(
-             channels,
-             sample_rate,
-             aot,
-             bitrate_mode,
-             bitrate || 0
-           ) do
-      {:ok, native}
-    else
-      {:error, reason} -> {:error, reason}
+  defp mk_native!(channels, sample_rate, aot, bitrate_mode, bitrate) do
+    :ok = validate_channels!(channels)
+    :ok = validate_sample_rate!(sample_rate)
+    :ok = validate_bitrate_mode!(bitrate_mode)
+    aot = map_aot_to_value!(aot)
+
+    Native.create(
+      channels,
+      sample_rate,
+      aot,
+      bitrate_mode,
+      bitrate || 0
+    )
+    |> case do
+      {:ok, native} -> native
+      {:error, reason} -> raise "Failed to create native encoder: #{inspect(reason)}"
     end
   end
 
@@ -235,23 +231,25 @@ defmodule Membrane.AAC.FDK.Encoder do
 
   # Options validators
 
-  defp map_aot_to_value(:mpeg4_lc), do: {:ok, 2}
-  defp map_aot_to_value(:mpeg4_he), do: {:ok, 5}
-  defp map_aot_to_value(:mpeg4_he_v2), do: {:ok, 29}
-  defp map_aot_to_value(:mpeg2_lc), do: {:ok, 129}
-  defp map_aot_to_value(:mpeg2_he), do: {:ok, 132}
-  defp map_aot_to_value(_aot), do: {:error, :invalid_aot}
+  defp map_aot_to_value!(:mpeg4_lc), do: 2
+  defp map_aot_to_value!(:mpeg4_he), do: 5
+  defp map_aot_to_value!(:mpeg4_he_v2), do: 29
+  defp map_aot_to_value!(:mpeg2_lc), do: 129
+  defp map_aot_to_value!(:mpeg2_he), do: 132
+  defp map_aot_to_value!(aot), do: raise("Invalid aot: #{inspect(aot)}")
 
-  defp validate_channels(channels) when channels in @allowed_channels, do: {:ok, channels}
-  defp validate_channels(_channels), do: {:error, :invalid_channels}
+  defp validate_channels!(channels) when channels in @allowed_channels, do: :ok
+  defp validate_channels!(channels), do: raise("Invalid channels number #{inspect(channels)}")
 
-  defp validate_sample_rate(sample_rate) when sample_rate in @allowed_sample_rates,
-    do: {:ok, sample_rate}
+  defp validate_sample_rate!(sample_rate) when sample_rate in @allowed_sample_rates, do: :ok
 
-  defp validate_sample_rate(_sample_rate), do: {:error, :invalid_sample_rate}
+  defp validate_sample_rate!(sample_rate) do
+    raise "Invalid sample_rate: #{inspect(sample_rate)}"
+  end
 
-  defp validate_bitrate_mode(bitrate_mode) when bitrate_mode in @allowed_bitrate_modes,
-    do: {:ok, bitrate_mode}
+  defp validate_bitrate_mode!(bitrate_mode) when bitrate_mode in @allowed_bitrate_modes, do: :ok
 
-  defp validate_bitrate_mode(_bitrate_mode), do: {:error, :invalid_bitrate_mode}
+  defp validate_bitrate_mode!(bitrate_mode) do
+    raise "Invalid bitrate_mode: #{inspect(bitrate_mode)}"
+  end
 end
