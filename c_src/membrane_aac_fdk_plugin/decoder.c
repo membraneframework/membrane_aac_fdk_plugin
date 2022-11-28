@@ -67,7 +67,7 @@ UNIFEX_TERM get_metadata(UnifexEnv *env, State *state) {
  * as arguments
  *
  * Returns one of:
- * - {:ok}
+ * - :ok
  * - {:error, :invalid_data}
  */
 UNIFEX_TERM fill(UnifexEnv *env, UnifexPayload *in_payload, State *state) {
