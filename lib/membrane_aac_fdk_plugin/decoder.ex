@@ -11,16 +11,17 @@ defmodule Membrane.AAC.FDK.Decoder do
   alias Membrane.Buffer
   alias Membrane.RawAudio
 
-  def_input_pad :input,
+  def_input_pad(:input,
     demand_mode: :auto,
     accepted_format:
       any_of(AAC, %Membrane.RemoteStream{content_format: format} when format in [AAC, nil])
+  )
 
-  def_output_pad :output, demand_mode: :auto, accepted_format: %RawAudio{sample_format: :s16le}
+  def_output_pad(:output, demand_mode: :auto, accepted_format: %RawAudio{sample_format: :s16le})
 
   @impl true
   def handle_init(_ctx, _opts) do
-    {[], %{native: nil}}
+    {[], %{native: nil, next_pts: nil, stream_format: nil}}
   end
 
   @impl true
@@ -46,14 +47,26 @@ defmodule Membrane.AAC.FDK.Decoder do
   # since they should stay consistent for the whole stream.
   # 4. In case an unhandled error is returned during this flow, returns error message.
   @impl true
-  def handle_process(:input, %Buffer{payload: payload}, ctx, state) do
+  def handle_process(:input, %Buffer{pts: pts} = buffer, ctx, %{next_pts: nil} = state) do
+    handle_process(:input, buffer, ctx, %{state | next_pts: pts})
+  end
+
+  def handle_process(:input, %Buffer{payload: payload}, ctx, %{next_pts: base_pts} = state) do
     :ok = Native.fill!(payload, state.native)
-    decoded_frames = decode_buffer!(payload, state.native)
+    decoded_buffers = decode_buffer!(payload, state.native)
 
-    format_action = get_format_if_needed(ctx.pads.output.stream_format, state)
-    buffer_actions = [buffer: {:output, decoded_frames}]
+    {format_actions, state} =
+      get_output_format_action_if_needed(ctx.pads.output.stream_format, state)
 
-    {format_action ++ buffer_actions, state}
+    {buffers, next_pts} =
+      Enum.map_reduce(decoded_buffers, base_pts, fn buffer, pts ->
+        {%Buffer{buffer | pts: pts}, pts + RawAudio.frames_to_time(1, state.stream_format)}
+      end)
+
+    buffer_actions = [buffer: {:output, buffers}]
+    state = %{state | next_pts: next_pts}
+
+    {format_actions ++ buffer_actions, state}
   end
 
   defp decode_buffer!(payload, native, acc \\ []) do
@@ -71,14 +84,13 @@ defmodule Membrane.AAC.FDK.Decoder do
     end
   end
 
-  defp get_format_if_needed(nil, state) do
+  defp get_output_format_action_if_needed(nil, state) do
     {:ok, {_frame_size, sample_rate, channels}} = Native.get_metadata(state.native)
-
-    [
-      stream_format:
-        {:output, %RawAudio{sample_format: :s16le, sample_rate: sample_rate, channels: channels}}
-    ]
+    format = %RawAudio{sample_format: :s16le, sample_rate: sample_rate, channels: channels}
+    {[stream_format: {:output, format}], %{state | stream_format: format}}
   end
 
-  defp get_format_if_needed(_format, _state), do: []
+  defp get_output_format_action_if_needed(_format, state) do
+    {[], state}
+  end
 end
