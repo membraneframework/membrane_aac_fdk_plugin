@@ -47,6 +47,11 @@ defmodule Membrane.AAC.FDK.Decoder do
   # since they should stay consistent for the whole stream.
   # 4. In case an unhandled error is returned during this flow, returns error message.
   @impl true
+  def handle_process(:input, %Buffer{pts: nil} = buffer, ctx, %{next_pts: nil} = state) do
+    # Start from 0 in case there are no pts at all.
+    handle_process(:input, buffer, ctx, %{state | next_pts: 0})
+  end
+
   def handle_process(:input, %Buffer{pts: pts} = buffer, ctx, %{next_pts: nil} = state) do
     handle_process(:input, buffer, ctx, %{state | next_pts: pts})
   end
