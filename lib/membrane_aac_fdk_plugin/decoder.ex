@@ -11,6 +11,8 @@ defmodule Membrane.AAC.FDK.Decoder do
   alias Membrane.Buffer
   alias Membrane.RawAudio
 
+  require Membrane.Logger
+
   def_input_pad(:input,
     demand_mode: :auto,
     accepted_format:
@@ -21,81 +23,59 @@ defmodule Membrane.AAC.FDK.Decoder do
 
   @impl true
   def handle_init(_ctx, _opts) do
-    {[], %{native: nil, next_pts: nil, stream_format: nil}}
+    {[], %{native: Native.create!(), output_format_detected: false}}
   end
 
   @impl true
-  def handle_setup(_ctx, state) do
-    {[], %{state | native: Native.create!()}}
-  end
-
-  @impl true
-  def handle_stream_format(:input, _format, _ctx, state) do
+  @doc """
+  Since we only accept buffers that carry one single frame, we're able to
+  preserve pts information simply forwarding it.
+  """
+  def handle_stream_format(:input, %Membrane.RemoteStream{content_format: %AAC{frames_per_buffer: 1}}, _ctx, state) do
     {[], state}
   end
 
-  # Handles parsing buffer payload to raw audio frames.
-  #
-  # The flow is as follows:
-  # 1. Fill the native buffer using `Native.fill!` with input buffer content
-  # 2. Natively decode audio frames using `Native.decode_frame`.
-  # Since the input buffer can contain more than one frame,
-  # we're calling `decode_frame` until it returns `:not_enough_bits`
-  # to ensure we're emptying the whole native buffer.
-  # 3. Set output format based on the stream metadata.
-  # This should execute only once when output format are not specified yet,
-  # since they should stay consistent for the whole stream.
-  # 4. In case an unhandled error is returned during this flow, returns error message.
+  def handle_stream_format(:input, %AAC{frames_per_buffer: 1}, _ctx, state) do
+    {[], state}
+  end
+
+  def handle_stream_format(:input, format, _ctx, _state) do
+    raise "Unsupported input frame format #{inspect format}"
+  end
+
   @impl true
-  def handle_process(:input, %Buffer{pts: nil} = buffer, ctx, %{next_pts: nil} = state) do
-    # Start from 0 in case there are no pts at all.
-    handle_process(:input, buffer, ctx, %{state | next_pts: 0})
+  def handle_process(:input, buffer, _ctx, %{output_format_detected: false} = state) do
+    fill_decoder(buffer, state)
+    buffer = decode_buffer(buffer, state)
+
+    {:ok, {_frame_size, sample_rate, channels}} = Native.get_metadata(state.native)
+    if sample_rate == 0 or channels == 0 do
+      raise "Unable to detect AAC format"
+    end
+
+    format = %RawAudio{sample_format: :s16le, sample_rate: sample_rate, channels: channels}
+    {[stream_format: {:output, format}, buffer: {:output, buffer}], %{state | output_format_detected: true}}
   end
 
-  def handle_process(:input, %Buffer{pts: pts} = buffer, ctx, %{next_pts: nil} = state) do
-    handle_process(:input, buffer, ctx, %{state | next_pts: pts})
+  def handle_process(:input, buffer, _ctx, state) do
+    fill_decoder(buffer, state)
+    buffer = decode_buffer(buffer, state)
+    {[buffer: {:output, buffer}], state}
   end
 
-  def handle_process(:input, %Buffer{payload: payload}, ctx, %{next_pts: base_pts} = state) do
-    :ok = Native.fill!(payload, state.native)
-    decoded_buffers = decode_buffer!(payload, state.native)
-
-    {format_actions, state} =
-      get_output_format_action_if_needed(ctx.pads.output.stream_format, state)
-
-    {buffers, next_pts} =
-      Enum.map_reduce(decoded_buffers, base_pts, fn buffer, pts ->
-        {%Buffer{buffer | pts: pts}, pts + RawAudio.frames_to_time(1, state.stream_format)}
-      end)
-
-    buffer_actions = [buffer: {:output, buffers}]
-    state = %{state | next_pts: next_pts}
-
-    {format_actions ++ buffer_actions, state}
+  defp fill_decoder(%Buffer{payload: payload}, %{native: native}) do
+    :ok = Native.fill!(payload, native)
   end
 
-  defp decode_buffer!(payload, native, acc \\ []) do
+  defp decode_buffer(%Buffer{payload: payload, pts: pts}, %{native: native}) do
     case Native.decode_frame(payload, native) do
       {:ok, decoded_frame} ->
-        # Accumulate decoded frames
-        decode_buffer!(payload, native, [%Buffer{payload: decoded_frame} | acc])
+        %Buffer{payload: decoded_frame, pts: pts}
 
       {:error, :not_enough_bits} ->
-        # Means that we've parsed the whole buffer.
-        Enum.reverse(acc)
-
+        raise "Not enough data to decode one complete AAC frame"
       {:error, reason} ->
         raise "Failed to decode frame: #{inspect(reason)}"
     end
-  end
-
-  defp get_output_format_action_if_needed(nil, state) do
-    {:ok, {_frame_size, sample_rate, channels}} = Native.get_metadata(state.native)
-    format = %RawAudio{sample_format: :s16le, sample_rate: sample_rate, channels: channels}
-    {[stream_format: {:output, format}], %{state | stream_format: format}}
-  end
-
-  defp get_output_format_action_if_needed(_format, state) do
-    {[], state}
   end
 end
