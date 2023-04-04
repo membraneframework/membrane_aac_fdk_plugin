@@ -69,7 +69,7 @@ defmodule Membrane.AAC.FDK.Decoder do
     {%Buffer{buffer | pts: next_pts}, next_pts + RawAudio.bytes_to_time(byte_size(payload), format)}
   end
 
-  defp fill_decoder(%Buffer{payload: payload, pts: pts, dts: dts}, %{native: native}) do
+  defp fill_decoder(%Buffer{payload: payload, pts: pts}, %{native: native}) do
     :ok = Native.fill!(payload, native)
   end
 
