@@ -53,8 +53,11 @@ defmodule Membrane.AAC.FDK.Decoder do
 
   def handle_process(:input, buffer, _ctx, %{output_format: format, next_pts: pts} = state) do
     fill_decoder(buffer, state)
-    buffer = decode_buffer(buffer, state)
-    {buffer, next_pts} = update_pts(buffer, format, pts)
+    {buffer, next_pts} =
+      buffer
+      |> decode_buffer(state)
+      |> update_pts(format, pts)
+
     {[buffer: {:output, buffer}], %{state | next_pts: next_pts}}
   end
 
