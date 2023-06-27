@@ -3,7 +3,6 @@ defmodule Membrane.AAC.FDK.Encoder do
   Element encoding raw audio into AAC format
   """
 
-  use Bunch.Typespec
   use Membrane.Filter
 
   import Membrane.Logger
