@@ -14,7 +14,10 @@ defmodule Membrane.AAC.FDK.Decoder do
   def_input_pad :input,
     demand_mode: :auto,
     accepted_format:
-      any_of(AAC, %Membrane.RemoteStream{content_format: format} when format in [AAC, nil])
+      any_of(
+        %AAC{encapsulation: :ADTS},
+        %Membrane.RemoteStream{content_format: format} when format in [AAC, nil]
+      )
 
   def_output_pad :output, demand_mode: :auto, accepted_format: %RawAudio{sample_format: :s16le}
 
