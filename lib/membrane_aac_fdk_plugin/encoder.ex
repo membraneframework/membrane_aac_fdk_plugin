@@ -88,7 +88,7 @@ defmodule Membrane.AAC.FDK.Encoder do
                 default: nil
               ]
 
-  def_output_pad :output, demand_mode: :auto, accepted_format: _any
+  def_output_pad :output, demand_mode: :auto, accepted_format: %AAC{encapsulation: :ADTS}
 
   def_input_pad :input,
     demand_unit: :bytes,
@@ -166,7 +166,7 @@ defmodule Membrane.AAC.FDK.Encoder do
     %{native: native, queue: queue} = state
 
     if queue != <<>>,
-      do: warn("Processing queue is not empty, but EndOfStream event was received")
+      do: warning("Processing queue is not empty, but EndOfStream event was received")
 
     actions = [end_of_stream: :output]
 
