@@ -60,6 +60,7 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
       {:membrane_common_c, "~> 0.15.0"},
       {:unifex, "~> 1.0"},
       {:bundlex, github: "membraneframework/bundlex", branch: "precompiled_deps", override: true},
+      # {:bundlex, path: "../bundlex", override: true},
       {:membrane_raw_audio_format, "~> 0.11.0"},
       {:membrane_aac_format, "~> 0.8.0"},
       {:membrane_file_plugin, "~> 0.13.0", only: :test},
