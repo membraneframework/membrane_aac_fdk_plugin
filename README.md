@@ -22,28 +22,6 @@ def deps do
 end
 ```
 
-This package depends on [FDK-AAC](https://github.com/mstorsjo/fdk-aac) library.
-
-### Ubuntu
-
-(Make sure you have Multiverse repository enabled. See: <https://help.ubuntu.com/community/Repositories/Ubuntu>)
-
-```
-sudo apt-get install libfdk-aac-dev
-```
-
-### Arch/Manjaro
-
-```
-pacman -S libfdk-aac
-```
-
-### MacOS
-
-```
-brew install fdk-aac
-```
-
 ## Usage
 
 ### Encoder  
