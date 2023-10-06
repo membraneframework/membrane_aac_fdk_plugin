@@ -14,8 +14,6 @@ workflows:
           filters:
             <<: *filters
       - elixir/lint:
-          cache-version:
-            2
           filters:
             <<: *filters
       - elixir/hex_publish:
