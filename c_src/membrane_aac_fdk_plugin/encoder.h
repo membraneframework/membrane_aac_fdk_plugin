@@ -1,6 +1,11 @@
 #pragma once
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall" 
+#pragma GCC diagnostic ignored "-Wextra" 
 #include <fdk-aac/aacenc_lib.h>
+#pragma GCC diagnostic pop
+
 #include <membrane/membrane.h>
 #define MEMBRANE_LOG_TAG "Membrane.AAC.FDK.EncoderNative"
 #include <membrane/log.h>
