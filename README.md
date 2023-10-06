@@ -22,8 +22,7 @@ def deps do
 end
 ```
 
-This package depends on [FDK-AAC](https://github.com/mstorsjo/fdk-aac) library. The precompiled 
-build will be pulled and linked automatically. However, should there be any problems, consider installing it manually.
+This package depends on the [FDK-AAC](https://github.com/mstorsjo/fdk-aac) library. The precompiled build will be pulled and linked automatically. However, should there be any problems, consider installing it manually.
 
 
 ### Ubuntu
