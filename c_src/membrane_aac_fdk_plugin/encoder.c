@@ -51,8 +51,7 @@ char *get_error_message(AACENC_ERROR err) {
  * Initializes AAC Encoder and returns State resource.
  *
  * Expects:
- * - channels - Number of channels. For now, only supports either 1 or 2
- * channels.
+ * - channels - Number of channels. 
  * - sample_rate - Sample rate.
  * - aot - Audio Object Type.
  * - bitrate_mode - 0 for CBR, 1-5 for VBR mode. See:
@@ -103,16 +102,14 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot,
 
   // Set channels configuration
   switch (channels) {
-  case 1:
-    channel_mode = MODE_1;
-    sce = 1;
-    cpe = 0;
-    break;
-  case 2:
-    channel_mode = MODE_2;
-    sce = 0;
-    cpe = 1;
-    break;
+  case 1: channel_mode = MODE_1;         sce = 1; cpe = 0; break;
+  case 2: channel_mode = MODE_2;         sce = 0; cpe = 1; break;
+  case 3: channel_mode = MODE_1_2;       sce = 1; cpe = 1; break;
+  case 4: channel_mode = MODE_1_2_1;     sce = 2; cpe = 1; break;
+  case 5: channel_mode = MODE_1_2_2;     sce = 1; cpe = 2; break;
+  case 6: channel_mode = MODE_1_2_2_1;   sce = 2; cpe = 2; break;
+  case 7: channel_mode = MODE_6_1;       sce = 3; cpe = 2; break;
+  case 8: channel_mode = MODE_1_2_2_2_1; sce = 2; cpe = 3; break;
   default:
     MEMBRANE_WARN(env, "AAC: Unsupported number of channels: %d", channels);
     return create_result_error(env, get_error_message(err));

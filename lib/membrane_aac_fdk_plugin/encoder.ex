@@ -18,9 +18,6 @@ defmodule Membrane.AAC.FDK.Encoder do
   # MPEG-4 AAC Low Complexity
   @default_audio_object_type :mpeg4_lc
 
-  @allowed_channels [1, 2]
-  @type allowed_channels :: unquote(Bunch.Typespec.enum_to_alternative(@allowed_channels))
-
   @allowed_aots [
     :mpeg4_lc,
     :mpeg4_he,
@@ -94,8 +91,7 @@ defmodule Membrane.AAC.FDK.Encoder do
     demand_unit: :bytes,
     demand_mode: :auto,
     accepted_format:
-      %RawAudio{sample_format: :s16le, channels: channels, sample_rate: rate}
-      when channels in @allowed_channels and rate in @allowed_sample_rates
+      %RawAudio{sample_format: :s16le, sample_rate: rate} when rate in @allowed_sample_rates
 
   @impl true
   def handle_init(_ctx, options) do
@@ -206,7 +202,6 @@ defmodule Membrane.AAC.FDK.Encoder do
   end
 
   defp mk_native!(channels, sample_rate, aot, bitrate_mode, bitrate) do
-    :ok = validate_channels!(channels)
     :ok = validate_sample_rate!(sample_rate)
     :ok = validate_bitrate_mode!(bitrate_mode)
     aot = map_aot_to_value!(aot)
@@ -236,9 +231,6 @@ defmodule Membrane.AAC.FDK.Encoder do
   defp map_aot_to_value!(:mpeg2_lc), do: 129
   defp map_aot_to_value!(:mpeg2_he), do: 132
   defp map_aot_to_value!(aot), do: raise("Invalid aot: #{inspect(aot)}")
-
-  defp validate_channels!(channels) when channels in @allowed_channels, do: :ok
-  defp validate_channels!(channels), do: raise("Invalid channels number #{inspect(channels)}")
 
   defp validate_sample_rate!(sample_rate) when sample_rate in @allowed_sample_rates, do: :ok
 

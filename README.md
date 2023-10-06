@@ -17,30 +17,31 @@ The package can be installed by adding `membrane_aac_fdk_plugin` to your list of
 ```elixir
 def deps do
   [
-    {:membrane_aac_fdk_plugin, "~> 0.16.0"}
+    {:membrane_aac_fdk_plugin, "~> 0.17.0"}
   ]
 end
 ```
 
-This package depends on [FDK-AAC](https://github.com/mstorsjo/fdk-aac) library.
+This package depends on the [FDK-AAC](https://github.com/mstorsjo/fdk-aac) library. The precompiled build will be pulled and linked automatically. However, should there be any problems, consider installing it manually.
 
-### Ubuntu
+### Manual instalation of dependencies
+#### Ubuntu
 
 (Make sure you have Multiverse repository enabled. See: <https://help.ubuntu.com/community/Repositories/Ubuntu>)
 
-```
+```bash
 sudo apt-get install libfdk-aac-dev
 ```
 
-### Arch/Manjaro
+#### Arch/Manjaro
 
-```
+```bash
 pacman -S libfdk-aac
 ```
 
-### MacOS
+#### MacOS
 
-```
+```bash
 brew install fdk-aac
 ```
 

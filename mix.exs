@@ -1,7 +1,7 @@
 defmodule Membrane.AAC.FDK.Plugin.MixProject do
   use Mix.Project
 
-  @version "0.16.0"
+  @version "0.17.0"
   @github_url "https://github.com/membraneframework/membrane_aac_fdk_plugin"
 
   def project do
@@ -58,7 +58,8 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
       {:bunch, "~> 1.4"},
       {:membrane_core, "~> 0.12.0"},
       {:membrane_common_c, "~> 0.15.0"},
-      {:unifex, "~> 1.0"},
+      {:unifex, "~> 1.1.0"},
+      {:bundlex, "~> 1.2.0"},
       {:membrane_raw_audio_format, "~> 0.11.0"},
       {:membrane_aac_format, "~> 0.8.0"},
       {:membrane_file_plugin, "~> 0.13.0", only: :test},
