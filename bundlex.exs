@@ -32,22 +32,25 @@ defmodule Membrane.AAC.FDK.BundlexProject do
         interface: :nif,
         deps: [membrane_common_c: :membrane],
         sources: ["decoder.c"],
-        preprocessor: Unifex
-      ] ++ deps(),
+        preprocessor: Unifex,
+        os_deps: [{provider(), "fdk-aac"}]
+      ],
       encoder: [
         interface: :nif,
         deps: [membrane_common_c: :membrane],
         sources: ["encoder.c"],
-        preprocessor: Unifex
-      ] ++ deps()
+        preprocessor: Unifex,
+        os_deps: [{provider(), "fdk-aac"}]
+      ]
     ]
   end
 
-  defp deps() do
-    Application.get_env(:membrane_aac_fdk_plugin, :use_local_natives)
+  defp provider() do
+    Application.get_env(:membrane_fdk_aac_plugin, :use_local_natives)
     |> case do
-      nil -> [os_deps: [{[get_fdk_aac_url(), :pkg_config], "fdk-aac"}]]
-      true -> [pkg_configs: ["fdk-aac"]]
+      nil -> [get_fdk_aac_url(), :pkg_config]
+      true -> :pkg_config
     end
   end
+
 end
