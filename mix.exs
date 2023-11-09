@@ -62,7 +62,7 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
       {:bundlex, "~> 1.2.0"},
       {:membrane_raw_audio_format, "~> 0.12.0"},
       {:membrane_aac_format, "~> 0.8.0"},
-      {:membrane_file_plugin, "~> 0.13.0", only: :test},
+      {:membrane_file_plugin, "~> 0.16.0", only: :test},
       {:ex_doc, "~> 0.28", only: :dev, runtime: false},
       {:credo, "~> 1.6", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false}
