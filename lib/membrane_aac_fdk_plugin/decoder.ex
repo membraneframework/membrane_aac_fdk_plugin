@@ -12,14 +12,13 @@ defmodule Membrane.AAC.FDK.Decoder do
   alias Membrane.RawAudio
 
   def_input_pad :input,
-    demand_mode: :auto,
     accepted_format:
       any_of(
         %AAC{encapsulation: :ADTS},
         %Membrane.RemoteStream{content_format: format} when format in [AAC, nil]
       )
 
-  def_output_pad :output, demand_mode: :auto, accepted_format: %RawAudio{sample_format: :s16le}
+  def_output_pad :output, accepted_format: %RawAudio{sample_format: :s16le}
 
   @impl true
   def handle_init(_ctx, _opts) do
@@ -49,7 +48,7 @@ defmodule Membrane.AAC.FDK.Decoder do
   # since they should stay consistent for the whole stream.
   # 4. In case an unhandled error is returned during this flow, returns error message.
   @impl true
-  def handle_process(:input, %Buffer{payload: payload}, ctx, state) do
+  def handle_buffer(:input, %Buffer{payload: payload}, ctx, state) do
     :ok = Native.fill!(payload, state.native)
     decoded_frames = decode_buffer!(payload, state.native)
 

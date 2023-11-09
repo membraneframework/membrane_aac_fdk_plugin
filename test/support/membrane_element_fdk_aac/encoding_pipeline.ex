@@ -13,12 +13,8 @@ defmodule Membrane.AAC.FDK.Support.EncodingPipeline do
                   spec: struct()
                 ]
 
-    def_output_pad :output, demand_mode: :auto, accepted_format: Membrane.RawAudio
-
-    def_input_pad :input,
-      demand_unit: :bytes,
-      demand_mode: :auto,
-      accepted_format: Membrane.RemoteStream
+    def_output_pad :output, accepted_format: Membrane.RawAudio
+    def_input_pad :input, accepted_format: Membrane.RemoteStream
 
     @impl true
     def handle_stream_format(:input, _format, _ctx, state) do
@@ -26,8 +22,8 @@ defmodule Membrane.AAC.FDK.Support.EncodingPipeline do
     end
 
     @impl true
-    def handle_process_list(:input, buffers, _ctx, state) do
-      {[buffer: {:output, buffers}], state}
+    def handle_buffer(:input, buffer, _ctx, state) do
+      {[buffer: {:output, buffer}], state}
     end
   end
 

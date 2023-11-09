@@ -85,11 +85,9 @@ defmodule Membrane.AAC.FDK.Encoder do
                 default: nil
               ]
 
-  def_output_pad :output, demand_mode: :auto, accepted_format: %AAC{encapsulation: :ADTS}
+  def_output_pad :output, accepted_format: %AAC{encapsulation: :ADTS}
 
   def_input_pad :input,
-    demand_unit: :bytes,
-    demand_mode: :auto,
     accepted_format:
       %RawAudio{sample_format: :s16le, sample_rate: rate} when rate in @allowed_sample_rates
 
@@ -137,11 +135,10 @@ defmodule Membrane.AAC.FDK.Encoder do
   end
 
   @impl true
-  def handle_process_list(:input, buffers, ctx, state) do
+  def handle_buffer(:input, buffer, ctx, state) do
     %{native: native, queue: queue} = state
 
-    data = buffers |> Enum.map(& &1.payload)
-    to_encode = [queue | data] |> IO.iodata_to_binary()
+    to_encode = queue <> buffer.payload
 
     raw_frame_size =
       aac_frame_size(state.aot) * ctx.pads.input.stream_format.channels * @sample_size
