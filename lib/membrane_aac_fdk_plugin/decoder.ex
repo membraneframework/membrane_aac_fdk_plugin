@@ -55,7 +55,7 @@ defmodule Membrane.AAC.FDK.Decoder do
     format_action = get_format_if_needed(ctx.pads.output.stream_format, state)
     buffer_actions = [buffer: {:output, decoded_frames}]
 
-    IO.inspect({format_action ++ buffer_actions, state}, label: "output")
+    {format_action ++ buffer_actions, state}
   end
 
   defp decode_buffer!(payload, native, pts, acc \\ []) do

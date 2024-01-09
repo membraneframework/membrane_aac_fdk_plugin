@@ -143,6 +143,7 @@ defmodule Membrane.AAC.FDK.Encoder do
 
     raw_frame_size =
       aac_frame_size(state.aot) * ctx.pads.input.stream_format.channels * @sample_size
+
     prepared_state =
       cond do
         state.queue == <<>> ->
@@ -156,6 +157,7 @@ defmodule Membrane.AAC.FDK.Encoder do
         true ->
           state
       end
+
     case encode_buffer(to_encode, native, raw_frame_size, prepared_state) do
       {encoded_buffers, bytes_used, state} when bytes_used > 0 ->
         <<_handled::binary-size(bytes_used), rest::binary>> = to_encode
@@ -193,7 +195,10 @@ defmodule Membrane.AAC.FDK.Encoder do
        when byte_size(buffer) >= raw_frame_size do
     <<raw_frame::binary-size(raw_frame_size), rest::binary>> = buffer
 
-    encoded_buffer = %Buffer{payload: Native.encode_frame!(raw_frame, native), pts: state.pts_current}
+    encoded_buffer = %Buffer{
+      payload: Native.encode_frame!(raw_frame, native),
+      pts: state.pts_current
+    }
 
     # Continue encoding the rest until no more frames are available in the queue
     encode_buffer(
@@ -215,10 +220,12 @@ defmodule Membrane.AAC.FDK.Encoder do
   defp bump_current_pts(%{pts_current: nil} = state, _raw_frame), do: state
 
   defp bump_current_pts(state, raw_frame) do
-    duration = raw_frame
+    duration =
+      raw_frame
       |> byte_size()
       |> RawAudio.bytes_to_time(state.input_stream_format)
-    Map.update!(state, :pts_current, & &1 + duration)
+
+    Map.update!(state, :pts_current, &(&1 + duration))
   end
 
   defp mk_native!(channels, sample_rate, aot, bitrate_mode, bitrate) do
