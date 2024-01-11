@@ -136,7 +136,7 @@ defmodule Membrane.AAC.FDK.Encoder do
   end
 
   @impl true
-  def handle_buffer(:input, %Buffer{payload: payload, pts: pts}, ctx, state) do
+  def handle_buffer(:input, %Buffer{payload: payload, pts: input_pts}, ctx, state) do
     %{native: native, queue: queue} = state
 
     to_encode = queue <> payload
@@ -144,29 +144,40 @@ defmodule Membrane.AAC.FDK.Encoder do
     raw_frame_size =
       aac_frame_size(state.aot) * ctx.pads.input.stream_format.channels * @sample_size
 
+    check_pts_integrity_flag =
+      if state.queue != <<>> do
+        true
+      else
+        false
+      end
+
     prepared_state =
-      cond do
-        state.queue == <<>> ->
-          %{state | pts_current: pts}
-
-        state.pts_current != pts ->
-          raise """
-          PTS values are not continuous
-          """
-
-        true ->
-          state
+      if state.queue == <<>> do
+        %{state | pts_current: input_pts}
+      else
+        state
       end
 
     case encode_buffer(to_encode, native, raw_frame_size, prepared_state) do
       {encoded_buffers, bytes_used, state} when bytes_used > 0 ->
         <<_handled::binary-size(bytes_used), rest::binary>> = to_encode
-
+        check_pts_integrity(check_pts_integrity_flag, List.first(encoded_buffers), input_pts)
         {[buffer: {:output, encoded_buffers}], %{state | queue: rest}}
 
       {[], 0, state} ->
         {[], %{state | queue: to_encode}}
     end
+  end
+
+  defp check_pts_integrity(true = _flag, %Buffer{pts: pts}, input_pts) do
+    if pts != input_pts do
+      raise """
+      PTS values are not continuous
+      """
+    end
+  end
+
+  defp check_pts_integrity(false = _flag, %Buffer{pts: _pts}, _input_pts) do
   end
 
   @impl true
