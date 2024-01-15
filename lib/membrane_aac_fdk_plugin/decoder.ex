@@ -50,7 +50,7 @@ defmodule Membrane.AAC.FDK.Decoder do
   @impl true
   def handle_buffer(:input, %Buffer{payload: payload, pts: pts}, ctx, state) do
     :ok = Native.fill!(payload, state.native)
-    decoded_frames = decode_buffer!(payload, state.native, pts)
+    decoded_frames = decode_buffer!(payload, pts, state.native)
 
     format_action = get_format_if_needed(ctx.pads.output.stream_format, state)
     buffer_actions = [buffer: {:output, decoded_frames}]
@@ -58,11 +58,11 @@ defmodule Membrane.AAC.FDK.Decoder do
     {format_action ++ buffer_actions, state}
   end
 
-  defp decode_buffer!(payload, native, pts, acc \\ []) do
+  defp decode_buffer!(payload, pts, native, acc \\ []) do
     case Native.decode_frame(payload, native) do
       {:ok, decoded_frame} ->
         # Accumulate decoded frames
-        decode_buffer!(payload, native, pts, [%Buffer{payload: decoded_frame, pts: pts} | acc])
+        decode_buffer!(payload, pts, native, [%Buffer{payload: decoded_frame, pts: pts} | acc])
 
       {:error, :not_enough_bits} ->
         # Means that we've parsed the whole buffer.

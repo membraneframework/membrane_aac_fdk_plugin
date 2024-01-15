@@ -99,7 +99,7 @@ defmodule Membrane.AAC.FDK.Encoder do
       |> Map.merge(%{
         native: nil,
         queue: <<>>,
-        pts_current: nil
+        current_pts: nil
       })
 
     {[], state}
@@ -144,40 +144,29 @@ defmodule Membrane.AAC.FDK.Encoder do
     raw_frame_size =
       aac_frame_size(state.aot) * ctx.pads.input.stream_format.channels * @sample_size
 
-    check_pts_integrity_flag =
-      if state.queue != <<>> do
-        true
-      else
-        false
-      end
+    check_pts_integrity? = state.queue != <<>>
 
-    prepared_state =
+    state =
       if state.queue == <<>> do
-        %{state | pts_current: input_pts}
+        %{state | current_pts: input_pts}
       else
         state
       end
 
-    case encode_buffer(to_encode, native, raw_frame_size, prepared_state) do
+    case encode_buffer(to_encode, native, raw_frame_size, state) do
       {encoded_buffers, bytes_used, state} when bytes_used > 0 ->
         <<_handled::binary-size(bytes_used), rest::binary>> = to_encode
-        check_pts_integrity(check_pts_integrity_flag, List.first(encoded_buffers), input_pts)
+
+        if check_pts_integrity? and length(encoded_buffers) >= 2 and
+             Enum.at(encoded_buffers, 1).pts != input_pts do
+          raise "PTS values are not continuous"
+        end
+
         {[buffer: {:output, encoded_buffers}], %{state | queue: rest}}
 
       {[], 0, state} ->
         {[], %{state | queue: to_encode}}
     end
-  end
-
-  defp check_pts_integrity(true = _flag, %Buffer{pts: pts}, input_pts) do
-    if pts != input_pts do
-      raise """
-      PTS values are not continuous
-      """
-    end
-  end
-
-  defp check_pts_integrity(false = _flag, %Buffer{pts: _pts}, _input_pts) do
   end
 
   @impl true
@@ -208,7 +197,7 @@ defmodule Membrane.AAC.FDK.Encoder do
 
     encoded_buffer = %Buffer{
       payload: Native.encode_frame!(raw_frame, native),
-      pts: state.pts_current
+      pts: state.current_pts
     }
 
     # Continue encoding the rest until no more frames are available in the queue
@@ -228,7 +217,7 @@ defmodule Membrane.AAC.FDK.Encoder do
     {acc |> Enum.reverse(), bytes_used, state}
   end
 
-  defp bump_current_pts(%{pts_current: nil} = state, _raw_frame), do: state
+  defp bump_current_pts(%{current_pts: nil} = state, _raw_frame), do: state
 
   defp bump_current_pts(state, raw_frame) do
     duration =
@@ -236,7 +225,7 @@ defmodule Membrane.AAC.FDK.Encoder do
       |> byte_size()
       |> RawAudio.bytes_to_time(state.input_stream_format)
 
-    Map.update!(state, :pts_current, &(&1 + duration))
+    Map.update!(state, :current_pts, &(&1 + duration))
   end
 
   defp mk_native!(channels, sample_rate, aot, bitrate_mode, bitrate) do
