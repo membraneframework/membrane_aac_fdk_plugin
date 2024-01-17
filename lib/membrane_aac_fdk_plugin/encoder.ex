@@ -158,8 +158,8 @@ defmodule Membrane.AAC.FDK.Encoder do
         <<_handled::binary-size(bytes_used), rest::binary>> = to_encode
 
         if check_pts_integrity? and length(encoded_buffers) >= 2 and
-             Enum.at(encoded_buffers, 1).pts != input_pts do
-          raise "PTS values are not continuous"
+             Enum.at(encoded_buffers, 1).pts > input_pts do
+          Membrane.Logger.warning("PTS values are overlapping")
         end
 
         {[buffer: {:output, encoded_buffers}], %{state | queue: rest}}
