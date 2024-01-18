@@ -83,6 +83,14 @@ defmodule Membrane.AAC.FDK.Encoder do
                 type: :integer,
                 spec: pos_integer() | nil,
                 default: nil
+              ],
+              input_stream_format: [
+                spec: RawAudio.t(),
+                type: :stream_format,
+                default: nil,
+                description: """
+                Input type - used to set input sample rate and channels.
+                """
               ]
 
   def_output_pad :output, accepted_format: %AAC{encapsulation: :ADTS}
@@ -107,6 +115,7 @@ defmodule Membrane.AAC.FDK.Encoder do
 
   @impl true
   def handle_stream_format(:input, format, _ctx, state) do
+
     native =
       mk_native!(
         format.channels,
@@ -131,8 +140,7 @@ defmodule Membrane.AAC.FDK.Encoder do
       mpeg_version: mpeg_version,
       encapsulation: :ADTS
     }
-
-    {[stream_format: {:output, out_format}], %{state | native: native}}
+    {[stream_format: {:output, out_format}], %{state | native: native, input_stream_format: format}}
   end
 
   @impl true
