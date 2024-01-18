@@ -115,7 +115,6 @@ defmodule Membrane.AAC.FDK.Encoder do
 
   @impl true
   def handle_stream_format(:input, format, _ctx, state) do
-
     native =
       mk_native!(
         format.channels,
@@ -140,7 +139,9 @@ defmodule Membrane.AAC.FDK.Encoder do
       mpeg_version: mpeg_version,
       encapsulation: :ADTS
     }
-    {[stream_format: {:output, out_format}], %{state | native: native, input_stream_format: format}}
+
+    {[stream_format: {:output, out_format}],
+     %{state | native: native, input_stream_format: format}}
   end
 
   @impl true
