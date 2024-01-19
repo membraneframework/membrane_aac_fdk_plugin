@@ -289,4 +289,8 @@ defmodule Membrane.AAC.FDK.Encoder do
         :ok
     end
   end
+
+  defp validate_pts_integrity(_check_pts_integrity?, _packets, _input_pts) do
+    :ok
+  end
 end
