@@ -166,7 +166,9 @@ defmodule Membrane.AAC.FDK.Encoder do
       {encoded_buffers, bytes_used, state} when bytes_used > 0 ->
         <<_handled::binary-size(bytes_used), rest::binary>> = to_encode
 
-        validate_pts_integrity(check_pts_integrity?, encoded_buffers, input_pts)
+        if check_pts_integrity? do
+          validate_pts_integrity(encoded_buffers, input_pts)
+        end
 
         {[buffer: {:output, encoded_buffers}], %{state | queue: rest}}
 
@@ -277,20 +279,18 @@ defmodule Membrane.AAC.FDK.Encoder do
     raise "Invalid bitrate_mode: #{inspect(bitrate_mode)}"
   end
 
-  defp validate_pts_integrity(true = _check_pts_integrity?, encoded_buffers, input_pts) do
+  defp validate_pts_integrity(packets, input_pts) do
     cond do
-      length(encoded_buffers) >= 2 and Enum.at(encoded_buffers, 1).pts > input_pts ->
+      length(packets) < 2 or Enum.at(packets, 1).pts == input_pts ->
+        :ok
+
+      Enum.at(packets, 1).pts > input_pts ->
         Membrane.Logger.warning("PTS values are overlapping")
+        :ok
 
-      length(encoded_buffers) >= 2 and Enum.at(encoded_buffers, 1).pts < input_pts ->
+      Enum.at(packets, 1).pts < input_pts ->
         Membrane.Logger.warning("PTS values are not continous")
-
-      true ->
         :ok
     end
-  end
-
-  defp validate_pts_integrity(_check_pts_integrity?, _packets, _input_pts) do
-    :ok
   end
 end
