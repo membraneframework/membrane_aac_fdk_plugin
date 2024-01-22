@@ -83,14 +83,6 @@ defmodule Membrane.AAC.FDK.Encoder do
                 type: :integer,
                 spec: pos_integer() | nil,
                 default: nil
-              ],
-              input_stream_format: [
-                spec: RawAudio.t(),
-                type: :stream_format,
-                default: nil,
-                description: """
-                Input type - used to set input sample rate and channels.
-                """
               ]
 
   def_output_pad :output, accepted_format: %AAC{encapsulation: :ADTS}
