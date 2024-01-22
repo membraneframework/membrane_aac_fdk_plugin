@@ -133,7 +133,10 @@ defmodule Membrane.AAC.FDK.Encoder do
     }
 
     {[stream_format: {:output, out_format}],
-     %{state | native: native, input_stream_format: format}}
+     Map.merge(state, %{
+       native: native,
+       input_stream_format: format
+     })}
   end
 
   @impl true
