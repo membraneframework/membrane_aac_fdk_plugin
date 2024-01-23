@@ -132,7 +132,11 @@ defmodule Membrane.AAC.FDK.Encoder do
       encapsulation: :ADTS
     }
 
-    {[stream_format: {:output, out_format}], %{state | native: native}}
+    {[stream_format: {:output, out_format}],
+     Map.merge(state, %{
+       native: native,
+       input_stream_format: format
+     })}
   end
 
   @impl true
@@ -157,9 +161,8 @@ defmodule Membrane.AAC.FDK.Encoder do
       {encoded_buffers, bytes_used, state} when bytes_used > 0 ->
         <<_handled::binary-size(bytes_used), rest::binary>> = to_encode
 
-        if check_pts_integrity? and length(encoded_buffers) >= 2 and
-             Enum.at(encoded_buffers, 1).pts > input_pts do
-          Membrane.Logger.warning("PTS values are overlapping")
+        if check_pts_integrity? do
+          validate_pts_integrity(encoded_buffers, input_pts)
         end
 
         {[buffer: {:output, encoded_buffers}], %{state | queue: rest}}
@@ -269,5 +272,20 @@ defmodule Membrane.AAC.FDK.Encoder do
 
   defp validate_bitrate_mode!(bitrate_mode) do
     raise "Invalid bitrate_mode: #{inspect(bitrate_mode)}"
+  end
+
+  defp validate_pts_integrity(packets, input_pts) do
+    cond do
+      length(packets) < 2 or Enum.at(packets, 1).pts == input_pts ->
+        :ok
+
+      Enum.at(packets, 1).pts > input_pts ->
+        Membrane.Logger.warning("PTS values are overlapping")
+        :ok
+
+      Enum.at(packets, 1).pts < input_pts ->
+        Membrane.Logger.warning("PTS values are not continous")
+        :ok
+    end
   end
 end
