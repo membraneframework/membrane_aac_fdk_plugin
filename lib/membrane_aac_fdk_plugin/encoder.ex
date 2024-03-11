@@ -182,7 +182,9 @@ defmodule Membrane.AAC.FDK.Encoder do
     actions = [end_of_stream: :output]
 
     with {:ok, encoded_frame} <- Native.encode_frame(<<>>, native) do
-      buffer_actions = [buffer: {:output, %Buffer{payload: encoded_frame}}]
+      buffer_actions = [
+        buffer: {:output, %Buffer{payload: encoded_frame, pts: state.current_pts}}
+      ]
 
       {buffer_actions ++ actions, state}
     else
