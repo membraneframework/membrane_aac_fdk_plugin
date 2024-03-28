@@ -277,17 +277,19 @@ defmodule Membrane.AAC.FDK.Encoder do
   end
 
   defp validate_pts_integrity(packets, input_pts) do
-    cond do
-      length(packets) < 2 or Enum.at(packets, 1).pts == input_pts ->
-        :ok
+    with [%Buffer{pts: first_pts}, %Buffer{pts: second_pts} | _tail] <- packets do
+      duration = second_pts - first_pts
+      epsilon = duration / 10
 
-      Enum.at(packets, 1).pts > input_pts ->
+      if input_pts < first_pts - epsilon do
         Membrane.Logger.warning("PTS values are overlapping")
-        :ok
+      end
 
-      Enum.at(packets, 1).pts < input_pts ->
+      if input_pts > second_pts + epsilon do
         Membrane.Logger.warning("PTS values are not continous")
-        :ok
+      end
     end
+
+    :ok
   end
 end
