@@ -228,7 +228,7 @@ defmodule Membrane.AAC.FDK.Encoder do
     duration =
       raw_frame
       |> byte_size()
-      |> RawAudio.bytes_to_time(state.input_stream_format, &round/1)
+      |> RawAudio.bytes_to_time(state.input_stream_format)
 
     Map.update!(state, :current_pts, &(&1 + duration))
   end
