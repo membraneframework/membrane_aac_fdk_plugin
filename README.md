@@ -101,7 +101,7 @@ defmodule AAC.Pipeline do
       })
       |> child(:sink, Membrane.PortAudio.Sink)
 
-    {[spec: structure, playback: :playing], %{}}
+    {[spec: structure], %{}}
   end
 end
 
