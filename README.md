@@ -106,6 +106,7 @@ defmodule AAC.Pipeline do
 end
 
 {:ok, _pipeline_supervisor, _pipeline} = AAC.Pipeline.start_link([])
+{:ok, _pipeline_supervisor, _pipeline} = Membrane.Pipeline.start_link(AAC.Pipeline, "")
 ```
 
 ## Copyright and License
