@@ -19,7 +19,7 @@ defmodule Membrane.FLAC.Parser.IntegrationTest do
   test "encode without timestamps" do
     pipeline = prepare_pts_test_pipeline(false)
 
-    Enum.each(0..294, fn index ->
+    Enum.each(0..294, fn _index ->
       assert_sink_buffer(pipeline, :sink, %Membrane.Buffer{pts: out_pts})
       assert out_pts == nil
     end)
