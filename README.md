@@ -17,7 +17,7 @@ The package can be installed by adding `membrane_aac_fdk_plugin` to your list of
 ```elixir
 def deps do
   [
-	{:membrane_aac_fdk_plugin, "~> 0.18.7"}
+    {:membrane_aac_fdk_plugin, "~> 0.18.7"}
   ]
 end
 ```
@@ -59,17 +59,17 @@ defmodule AAC.Pipeline do
 
   @impl true
   def handle_init(_ctx, _opts) do
-    structure = 
+    spec = 
       child(:source, %Membrane.File.Source{location: "input.wav"})
       |> child(:parser, Membrane.WAV.Parser)
       |> child(:aac_encoder, Membrane.AAC.FDK.Encoder)
       |> child(:sink, %Membrane.File.Sink{location: "output.aac"})
 
-    {[spec: structure, playback: :playing], %{}}
+    {[spec: spec], %{}}
   end
 end
 
-{:ok, _pipeline_supervisor, _pipeline} = AAC.Pipeline.start_link([])
+{:ok, _pipeline_supervisor, _pipeline} = Membrane.Pipeline.start_link(AAC.Pipeline, [])
 ```
 
 ### Decoder
@@ -89,7 +89,7 @@ defmodule AAC.Pipeline do
 
   @impl true
   def handle_init(_ctx, _opts) do
-    structure =
+    spec =
       child(:source, %Membrane.File.Source{location: "input.aac"})
       |> child(:aac_decoder, Membrane.AAC.FDK.Decoder)
       |> child(:converter, %Membrane.FFmpeg.SWResample.Converter{
@@ -101,7 +101,7 @@ defmodule AAC.Pipeline do
       })
       |> child(:sink, Membrane.PortAudio.Sink)
 
-    {[spec: structure], %{}}
+    {[spec: spec], %{}}
   end
 end
 
