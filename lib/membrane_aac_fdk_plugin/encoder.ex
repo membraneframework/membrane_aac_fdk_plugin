@@ -277,7 +277,8 @@ defmodule Membrane.AAC.FDK.Encoder do
   end
 
   defp validate_pts_integrity(packets, input_pts) do
-    with [%Buffer{pts: first_pts}, %Buffer{pts: second_pts} | _tail] <- packets do
+    with [%Buffer{pts: first_pts}, %Buffer{pts: second_pts} | _tail]
+         when first_pts != nil and second_pts != nil <- packets do
       duration = second_pts - first_pts
       epsilon = duration / 10
 
