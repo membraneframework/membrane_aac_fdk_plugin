@@ -280,7 +280,7 @@ defmodule Membrane.AAC.FDK.Encoder do
     with [%Buffer{pts: first_pts}, %Buffer{pts: second_pts} | _tail]
          when first_pts != nil and second_pts != nil <- packets do
       duration = second_pts - first_pts
-      epsilon = duration / 10
+      epsilon = duration / 2
 
       if input_pts < first_pts - epsilon do
         Membrane.Logger.warning("PTS values are overlapping")
