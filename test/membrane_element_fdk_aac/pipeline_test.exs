@@ -34,9 +34,9 @@ defmodule Membrane.AAC.FDK.PipelineTest do
 
     def_output_pad :output, accepted_format: _any, flow_control: :push
 
-
     @impl true
-    def handle_parent_notification(:send_end_of_stream, _ctx, state), do: {[end_of_stream: :output], state}
+    def handle_parent_notification(:send_end_of_stream, _ctx, state),
+      do: {[end_of_stream: :output], state}
   end
 
   describe "As part of the pipeline" do
@@ -53,11 +53,13 @@ defmodule Membrane.AAC.FDK.PipelineTest do
     [{"Encoder", Encoder}, {"Decoder", Decoder}]
     |> Enum.map(fn {name, module} ->
       test "#{name} can receive end of stream without start of stream" do
-        pipeline = Testing.Pipeline.start_link_supervised!(spec:
-          child(:source, SimpleSource)
-          |> child(unquote(module))
-          |> child(:sink, Testing.Sink)
-        )
+        pipeline =
+          Testing.Pipeline.start_link_supervised!(
+            spec:
+              child(:source, SimpleSource)
+              |> child(unquote(module))
+              |> child(:sink, Testing.Sink)
+          )
 
         Process.sleep(500)
         Testing.Pipeline.notify_child(pipeline, :source, :send_end_of_stream)
@@ -66,7 +68,6 @@ defmodule Membrane.AAC.FDK.PipelineTest do
 
         Testing.Pipeline.terminate(pipeline)
       end
-
     end)
   end
 end
