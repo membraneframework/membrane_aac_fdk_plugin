@@ -173,7 +173,7 @@ defmodule Membrane.AAC.FDK.Encoder do
   end
 
   @impl true
-  def handle_end_of_stream(:input, _ctx, state) do
+  def handle_end_of_stream(:input, %{start_of_stream_received?: true}, state) do
     %{native: native, queue: queue} = state
 
     if queue != <<>>,
@@ -191,6 +191,11 @@ defmodule Membrane.AAC.FDK.Encoder do
       {:error, :no_data} -> {actions, state}
       {:error, reason} -> raise "Failed to encode frame: #{inspect(reason)}"
     end
+  end
+
+  @impl true
+  def handle_end_of_stream(:input, %{start_of_stream_received?: false}, state) do
+    {[end_of_stream: :output], state}
   end
 
   defp encode_buffer(buffer, native, raw_frame_size, acc \\ [], bytes_used \\ 0, state)

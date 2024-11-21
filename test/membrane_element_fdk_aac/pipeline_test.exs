@@ -1,6 +1,11 @@
 defmodule Membrane.AAC.FDK.PipelineTest do
   use ExUnit.Case
+
+  import Membrane.ChildrenSpec
   import Membrane.Testing.Assertions
+
+  alias Membrane.Testing
+  alias Membrane.AAC.FDK.{Decoder, Encoder}
   alias Membrane.AAC.FDK.Support.{DecodingPipeline, EncodingPipeline}
 
   defp assert_files_equal(file_a, file_b) do
@@ -24,6 +29,16 @@ defmodule Membrane.AAC.FDK.PipelineTest do
     assert_files_equal(out_path, reference_path)
   end
 
+  defmodule SimpleSource do
+    use Membrane.Source
+
+    def_output_pad :output, accepted_format: _any, flow_control: :push
+
+
+    @impl true
+    def handle_parent_notification(:send_end_of_stream, _ctx, state), do: {[end_of_stream: :output], state}
+  end
+
   describe "As part of the pipeline" do
     @describetag :tmp_dir
 
@@ -34,5 +49,24 @@ defmodule Membrane.AAC.FDK.PipelineTest do
     test "Decoder must decoder file", ctx do
       test_file(DecodingPipeline, "sample.aac", "sample.raw", ctx)
     end
+
+    [{"Encoder", Encoder}, {"Decoder", Decoder}]
+    |> Enum.map(fn {name, module} ->
+      test "#{name} can receive end of stream without start of stream" do
+        pipeline = Testing.Pipeline.start_link_supervised!(spec:
+          child(:source, SimpleSource)
+          |> child(unquote(module))
+          |> child(:sink, Testing.Sink)
+        )
+
+        Process.sleep(500)
+        Testing.Pipeline.notify_child(pipeline, :source, :send_end_of_stream)
+
+        assert_end_of_stream(pipeline, :sink)
+
+        Testing.Pipeline.terminate(pipeline)
+      end
+
+    end)
   end
 end
