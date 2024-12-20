@@ -89,7 +89,8 @@ defmodule Membrane.AAC.FDK.Encoder do
 
   def_input_pad :input,
     accepted_format:
-      %RawAudio{sample_format: :s16le, sample_rate: rate} when rate in @allowed_sample_rates
+      %RawAudio{sample_format: :s16le, sample_rate: rate, channels: channels}
+      when rate in @allowed_sample_rates and channels in 1..8
 
   @impl true
   def handle_init(_ctx, options) do
