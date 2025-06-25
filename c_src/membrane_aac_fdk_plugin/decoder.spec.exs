@@ -14,3 +14,5 @@ spec fill(payload, state) :: (:ok :: label)
 spec decode_frame(payload, state) :: {:ok :: label, payload}
   | {:error :: label, :not_enough_bits :: label}
   | {:error :: label, :unknown :: label}
+
+dirty :cpu, [:create, :get_metadata, :fill, :decode_frame]
