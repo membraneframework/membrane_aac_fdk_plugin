@@ -51,7 +51,7 @@ char *get_error_message(AACENC_ERROR err) {
  * Initializes AAC Encoder and returns State resource.
  *
  * Expects:
- * - channels - Number of channels. 
+ * - channels - Number of channels.
  * - sample_rate - Sample rate.
  * - aot - Audio Object Type.
  * - bitrate_mode - 0 for CBR, 1-5 for VBR mode. See:
@@ -61,8 +61,9 @@ char *get_error_message(AACENC_ERROR err) {
  * In case of error, returns:
  * - {:error, reason}
  */
-UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot,
-                   int bitrate_mode, int bitrate) {
+UNIFEX_TERM create(
+    UnifexEnv *env, int channels, int sample_rate, int aot, int bitrate_mode, int bitrate
+) {
   State *state = unifex_alloc_state(env);
   state->channels = channels;
 
@@ -102,22 +103,53 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot,
 
   // Set channels configuration
   switch (channels) {
-  case 1: channel_mode = MODE_1;         sce = 1; cpe = 0; break;
-  case 2: channel_mode = MODE_2;         sce = 0; cpe = 1; break;
-  case 3: channel_mode = MODE_1_2;       sce = 1; cpe = 1; break;
-  case 4: channel_mode = MODE_1_2_1;     sce = 2; cpe = 1; break;
-  case 5: channel_mode = MODE_1_2_2;     sce = 1; cpe = 2; break;
-  case 6: channel_mode = MODE_1_2_2_1;   sce = 2; cpe = 2; break;
-  case 7: channel_mode = MODE_6_1;       sce = 3; cpe = 2; break;
-  case 8: channel_mode = MODE_1_2_2_2_1; sce = 2; cpe = 3; break;
+  case 1:
+    channel_mode = MODE_1;
+    sce = 1;
+    cpe = 0;
+    break;
+  case 2:
+    channel_mode = MODE_2;
+    sce = 0;
+    cpe = 1;
+    break;
+  case 3:
+    channel_mode = MODE_1_2;
+    sce = 1;
+    cpe = 1;
+    break;
+  case 4:
+    channel_mode = MODE_1_2_1;
+    sce = 2;
+    cpe = 1;
+    break;
+  case 5:
+    channel_mode = MODE_1_2_2;
+    sce = 1;
+    cpe = 2;
+    break;
+  case 6:
+    channel_mode = MODE_1_2_2_1;
+    sce = 2;
+    cpe = 2;
+    break;
+  case 7:
+    channel_mode = MODE_6_1;
+    sce = 3;
+    cpe = 2;
+    break;
+  case 8:
+    channel_mode = MODE_1_2_2_2_1;
+    sce = 2;
+    cpe = 3;
+    break;
   default:
     MEMBRANE_WARN(env, "AAC: Unsupported number of channels: %d", channels);
     return create_result_error(env, get_error_message(err));
   }
   err = aacEncoder_SetParam(state->handle, AACENC_CHANNELMODE, channel_mode);
   if (err != AACENC_OK) {
-    MEMBRANE_WARN(env, "AAC: Unable to set channel mode %d: %x\n", channel_mode,
-                  err);
+    MEMBRANE_WARN(env, "AAC: Unable to set channel mode %d: %x\n", channel_mode, err);
     return create_result_error(env, get_error_message(err));
   }
 
@@ -132,8 +164,8 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot,
     // VBR
     if (bitrate_mode < 1 || bitrate_mode > 5) {
       MEMBRANE_WARN(
-          env, "AAC: Unable to set VBR mode: %d. VBR quality should be 1-5\n",
-          bitrate_mode);
+          env, "AAC: Unable to set VBR mode: %d. VBR quality should be 1-5\n", bitrate_mode
+      );
       return create_result_error(env, "invalid_vbr");
     }
     err = aacEncoder_SetParam(state->handle, AACENC_BITRATEMODE, bitrate_mode);
@@ -150,8 +182,7 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot,
     if (!bitrate) {
       bitrate = (96 * sce + 128 * cpe) * sample_rate / 44;
     }
-    if (aot == PROFILE_AAC_HE || aot == PROFILE_AAC_HE_v2 ||
-        aot == PROFILE_MPEG2_AAC_HE) {
+    if (aot == PROFILE_AAC_HE || aot == PROFILE_AAC_HE_v2 || aot == PROFILE_MPEG2_AAC_HE) {
       bitrate /= 2;
     }
     err = aacEncoder_SetParam(state->handle, AACENC_BITRATE, bitrate);
@@ -193,8 +224,7 @@ UNIFEX_TERM create(UnifexEnv *env, int channels, int sample_rate, int aot,
  * data to encode a single frame
  * - {:error, reason} - When native encoding failed
  */
-UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload,
-                         State *state) {
+UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state) {
   UNIFEX_TERM res;
   AACENC_ERROR err;
 
@@ -250,8 +280,7 @@ UNIFEX_TERM encode_frame(UnifexEnv *env, UnifexPayload *in_payload,
   }
 
   UnifexPayload out_payload;
-  unifex_payload_alloc(env, UNIFEX_PAYLOAD_BINARY, out_args.numOutBytes,
-                       &out_payload);
+  unifex_payload_alloc(env, UNIFEX_PAYLOAD_BINARY, out_args.numOutBytes, &out_payload);
   memcpy(out_payload.data, state->aac_buffer, out_args.numOutBytes);
   res = encode_frame_result_ok(env, &out_payload);
   unifex_payload_release(&out_payload);
