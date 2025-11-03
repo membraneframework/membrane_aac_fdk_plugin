@@ -53,8 +53,9 @@ UNIFEX_TERM get_metadata(UnifexEnv *env, State *state) {
 
   CStreamInfo *stream_info = aacDecoder_GetStreamInfo(state->handle);
 
-  res = get_metadata_result(env, stream_info->frameSize,
-                            stream_info->sampleRate, stream_info->numChannels);
+  res = get_metadata_result(
+      env, stream_info->frameSize, stream_info->sampleRate, stream_info->numChannels
+  );
   return res;
 }
 
@@ -75,8 +76,7 @@ UNIFEX_TERM fill(UnifexEnv *env, UnifexPayload *in_payload, State *state) {
   AAC_DECODER_ERROR err;
   UINT valid = in_payload->size;
 
-  err = aacDecoder_Fill(state->handle, &in_payload->data, &in_payload->size,
-                        &valid);
+  err = aacDecoder_Fill(state->handle, &in_payload->data, &in_payload->size, &valid);
   if (err != AAC_DEC_OK) {
     MEMBRANE_WARN(env, "AAC: aacDecoder_Fill() failed: %x\n", err);
     return fill_result_error_invalid_data(env);
@@ -84,8 +84,7 @@ UNIFEX_TERM fill(UnifexEnv *env, UnifexPayload *in_payload, State *state) {
   if (valid != 0) {
     // See:
     // https://github.com/mstorsjo/fdk-aac/blob/95858d7bd36f19bde4a9595e2bd68f195215b164/libAACdec/include/aacdecoder_lib.h#L1014
-    MEMBRANE_WARN(env, "AAC: aacDecoder_Fill() left %d bytes in input buffer\n",
-                  valid);
+    MEMBRANE_WARN(env, "AAC: aacDecoder_Fill() left %d bytes in input buffer\n", valid);
   }
 
   res = fill_result_ok(env);
@@ -107,16 +106,18 @@ UNIFEX_TERM fill(UnifexEnv *env, UnifexPayload *in_payload, State *state) {
  * - {:error, :not_enough_bits}
  * - {:error, :unknown}
  */
-UNIFEX_TERM decode_frame(UnifexEnv *env, UnifexPayload *in_payload,
-                         State *state) {
+UNIFEX_TERM decode_frame(UnifexEnv *env, UnifexPayload *in_payload, State *state) {
   UNIFEX_TERM res;
   AAC_DECODER_ERROR err;
 
-  err = aacDecoder_DecodeFrame(state->handle, (INT_PCM *)state->decoder_buffer,
-                               state->decoder_buffer_size / sizeof(INT_PCM), 0);
+  err = aacDecoder_DecodeFrame(
+      state->handle,
+      (INT_PCM *)state->decoder_buffer,
+      state->decoder_buffer_size / sizeof(INT_PCM),
+      0
+  );
   if (err == AAC_DEC_NOT_ENOUGH_BITS) {
-    MEMBRANE_WARN(env,
-                  "AAC: aacDecoder_DecodeFrame() - not enough bits supplied");
+    MEMBRANE_WARN(env, "AAC: aacDecoder_DecodeFrame() - not enough bits supplied");
     return decode_frame_result_error_not_enough_bits(env);
   }
   if (err != AAC_DEC_OK) {
@@ -126,8 +127,7 @@ UNIFEX_TERM decode_frame(UnifexEnv *env, UnifexPayload *in_payload,
 
   CStreamInfo *stream_info = aacDecoder_GetStreamInfo(state->handle);
 
-  UINT out_payload_size =
-      stream_info->frameSize * stream_info->numChannels * sizeof(INT_PCM);
+  UINT out_payload_size = stream_info->frameSize * stream_info->numChannels * sizeof(INT_PCM);
   UnifexPayload out_payload;
   unifex_payload_alloc(env, in_payload->type, out_payload_size, &out_payload);
   memcpy(out_payload.data, state->decoder_buffer, out_payload_size);

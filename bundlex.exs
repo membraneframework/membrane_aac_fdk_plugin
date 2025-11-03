@@ -15,7 +15,10 @@ defmodule Membrane.AAC.FDK.BundlexProject do
         sources: ["decoder.c"],
         os_deps: [
           "fdk-aac": [
-            {:precompiled, Membrane.PrecompiledDependencyProvider.get_dependency_url(:"fdk-aac")},
+            {:precompiled,
+             Membrane.PrecompiledDependencyProvider.get_dependency_url(:"fdk-aac",
+               version: "2.0.3"
+             )},
             :pkg_config
           ]
         ],
@@ -27,7 +30,10 @@ defmodule Membrane.AAC.FDK.BundlexProject do
         sources: ["encoder.c"],
         os_deps: [
           "fdk-aac": [
-            {:precompiled, Membrane.PrecompiledDependencyProvider.get_dependency_url(:"fdk-aac")},
+            {:precompiled,
+             Membrane.PrecompiledDependencyProvider.get_dependency_url(:"fdk-aac",
+               version: "2.0.3"
+             )},
             :pkg_config
           ]
         ],
