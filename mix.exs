@@ -1,7 +1,7 @@
 defmodule Membrane.AAC.FDK.Plugin.MixProject do
   use Mix.Project
 
-  @version "0.18.13"
+  @version "0.18.14"
   @github_url "https://github.com/membraneframework/membrane_aac_fdk_plugin"
 
   def project do
@@ -19,7 +19,8 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
       docs: docs(),
       homepage_url: "https://membraneframework.org",
       deps: deps(),
-      dialyzer: dialyzer()
+      dialyzer: dialyzer(),
+      aliases: [docs: ["docs", &prepend_llms_links/1]]
     ]
   end
 
@@ -36,7 +37,6 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
     [
       main: "readme",
       extras: ["README.md", "LICENSE"],
-      formatters: ["html"],
       source_ref: "v#{@version}"
     ]
   end
@@ -64,7 +64,7 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
       {:membrane_raw_audio_format, "~> 0.12.0"},
       {:membrane_aac_format, "~> 0.8.0"},
       {:membrane_file_plugin, "~> 0.16.0", only: :test},
-      {:ex_doc, "~> 0.28", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.40", only: :dev, runtime: false},
       {:credo, "~> 1.6", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false}
     ]
@@ -82,4 +82,19 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
       opts
     end
   end
+
+defp prepend_llms_links(_) do
+  path = "doc/llms.txt"
+
+  if File.exists?(path) do
+    existing = File.read!(path)
+
+    header =
+      "- [Membrane Core AI Skill](https://hexdocs.pm/membrane_core/skill.md)\n" <>
+        "- [Membrane Core](https://hexdocs.pm/membrane_core/llms.txt)\n\n"
+
+    File.write!(path, header <> existing)
+  end
+end
+
 end
