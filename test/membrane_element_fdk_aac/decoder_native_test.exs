@@ -49,8 +49,8 @@ defmodule Membrane.AAC.FDK.Decoder.NativeTest do
       assert {:ok, ref_file} = File.read(reference_path)
 
       assert <<ref_frame1::bytes-size(4096), ref_frame2::bytes-size(4096),
-               ref_frame3::bytes-size(4096), ref_frame4::bytes-size(4096),
-               _rest::binary>> = ref_file
+               ref_frame3::bytes-size(4096), ref_frame4::bytes-size(4096), _rest::binary>> =
+               ref_file
 
       assert_frames_equal(decoded_frame1, ref_frame1)
       assert_frames_equal(decoded_frame2, ref_frame2)

@@ -1,7 +1,7 @@
 defmodule Membrane.AAC.FDK.Plugin.MixProject do
   use Mix.Project
 
-  @version "0.18.13"
+  @version "0.18.14"
   @github_url "https://github.com/membraneframework/membrane_aac_fdk_plugin"
 
   def project do
@@ -64,9 +64,9 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
       {:membrane_raw_audio_format, "~> 0.12.0"},
       {:membrane_aac_format, "~> 0.8.0"},
       {:membrane_file_plugin, "~> 0.16.0", only: :test},
-      {:ex_doc, "~> 0.28", only: :dev, runtime: false},
-      {:credo, "~> 1.6", only: :dev, runtime: false},
-      {:dialyxir, "~> 1.1", only: :dev, runtime: false}
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:credo, ">= 0.0.0", only: :dev, runtime: false},
+      {:dialyxir, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
 
@@ -77,6 +77,7 @@ defmodule Membrane.AAC.FDK.Plugin.MixProject do
 
     if System.get_env("CI") == "true" do
       # Store PLTs in cacheable directory for CI
+      File.mkdir_p!(Path.join([__DIR__, "priv", "plts"]))
       [plt_local_path: "priv/plts", plt_core_path: "priv/plts"] ++ opts
     else
       opts
