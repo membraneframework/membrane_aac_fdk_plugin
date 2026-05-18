@@ -11,10 +11,7 @@ defmodule Membrane.AAC.FDK.PipelineTest do
   defp assert_files_equal(file_a, file_b) do
     assert {:ok, a} = File.read(file_a)
     assert {:ok, b} = File.read(file_b)
-    assert is_binary(a)
-    assert is_binary(b)
-    assert byte_size(a) == byte_size(b), "file sizes differ: #{byte_size(a)} vs #{byte_size(b)}"
-    assert a == b, "file contents differ"
+    assert a == b
   end
 
   defp prepare_paths(file_in, file_out, tmp_dir) do
