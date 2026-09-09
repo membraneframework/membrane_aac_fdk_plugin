@@ -1,7 +1,11 @@
 defmodule Membrane.FLAC.Parser.IntegrationTest do
   use ExUnit.Case, async: true
   import Membrane.Testing.Assertions
-  alias Membrane.{Pipeline, Time}
+  alias Membrane.{Buffer, Pipeline, RawAudio, Testing, Time}
+
+  @decoder_output_format %RawAudio{sample_format: :s16le, sample_rate: 44_100, channels: 2}
+  # 1024 samples of concealment lookahead plus 15 ms of PCM limiter
+  @decoder_delay RawAudio.frames_to_time(1685, @decoder_output_format)
 
   test "encode with timestamps" do
     pipeline = prepare_pts_test_pipeline(true)
@@ -25,6 +29,41 @@ defmodule Membrane.FLAC.Parser.IntegrationTest do
     end)
 
     Pipeline.terminate(pipeline)
+  end
+
+  test "decode with timestamps" do
+    pipeline = prepare_decoder_pts_test_pipeline(Time.seconds(1))
+
+    assert_sink_stream_format(pipeline, :sink, @decoder_output_format)
+
+    assert_sink_buffer(pipeline, :sink, %Buffer{pts: pts})
+    assert pts == Time.seconds(1) - @decoder_delay
+
+    Pipeline.terminate(pipeline)
+  end
+
+  test "decode without timestamps" do
+    pipeline = prepare_decoder_pts_test_pipeline(nil)
+
+    assert_sink_buffer(pipeline, :sink, %Buffer{pts: nil})
+
+    Pipeline.terminate(pipeline)
+  end
+
+  defp prepare_decoder_pts_test_pipeline(pts) do
+    import Membrane.ChildrenSpec
+
+    payload = "../fixtures/input-sample.aac" |> Path.expand(__DIR__) |> File.read!()
+
+    spec =
+      child(:source, %Testing.Source{
+        output: [%Buffer{payload: payload, pts: pts}],
+        stream_format: %Membrane.RemoteStream{content_format: Membrane.AAC}
+      })
+      |> child(:decoder, Membrane.AAC.FDK.Decoder)
+      |> child(:sink, Testing.Sink)
+
+    Testing.Pipeline.start_link_supervised!(spec: spec)
   end
 
   defp prepare_pts_test_pipeline(with_pts?) do

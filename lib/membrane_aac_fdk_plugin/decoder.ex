@@ -1,11 +1,6 @@
 defmodule Membrane.AAC.FDK.Decoder do
   @moduledoc """
   Element for decoding AAC audio to raw data in S16LE format.
-
-  The FDK decoder delays its output by a stream dependent number of samples
-  (frame concealment lookahead, PCM limiter attack, SBR). The element
-  compensates for it by shifting the timestamps of output buffers back by that
-  delay, so a buffer's `pts` describes the samples it actually contains.
   """
 
   use Bunch
@@ -80,7 +75,6 @@ defmodule Membrane.AAC.FDK.Decoder do
     end
   end
 
-  # Stream info is only valid once the decoder has produced a frame.
   defp get_format_if_needed(nil, [_frame | _rest], state) do
     {:ok, {_frame_size, sample_rate, channels, output_delay}} =
       Native.get_metadata(state.native)
