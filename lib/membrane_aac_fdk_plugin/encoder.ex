@@ -160,7 +160,7 @@ defmodule Membrane.AAC.FDK.Encoder do
 
     case encode_buffer(to_encode, native, raw_frame_size, state) do
       {encoded_buffers, bytes_used, state} when bytes_used > 0 ->
-        <<_handled::binary-size(bytes_used), rest::binary>> = to_encode
+        <<_handled::binary-size(^bytes_used), rest::binary>> = to_encode
 
         if check_pts_integrity? do
           validate_pts_integrity(encoded_buffers, input_pts)
@@ -204,7 +204,7 @@ defmodule Membrane.AAC.FDK.Encoder do
   # Encode a single frame if buffer contains at least one frame
   defp encode_buffer(buffer, native, raw_frame_size, acc, bytes_used, state)
        when byte_size(buffer) >= raw_frame_size do
-    <<raw_frame::binary-size(raw_frame_size), rest::binary>> = buffer
+    <<raw_frame::binary-size(^raw_frame_size), rest::binary>> = buffer
 
     encoded_buffer = %Buffer{
       payload: Native.encode_frame!(raw_frame, native),
