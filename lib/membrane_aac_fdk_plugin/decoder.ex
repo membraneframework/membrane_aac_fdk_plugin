@@ -1,6 +1,11 @@
 defmodule Membrane.AAC.FDK.Decoder do
   @moduledoc """
   Element for decoding AAC audio to raw data in S16LE format.
+
+  The FDK decoder delays its output by a stream dependent number of samples
+  (frame concealment lookahead, PCM limiter attack, SBR). The element
+  compensates for it by shifting the timestamps of output buffers back by that
+  delay, so a buffer's `pts` describes the samples it actually contains.
   """
 
   use Bunch
@@ -22,7 +27,7 @@ defmodule Membrane.AAC.FDK.Decoder do
 
   @impl true
   def handle_init(_ctx, _opts) do
-    {[], %{native: nil}}
+    {[], %{native: nil, pts_offset: nil}}
   end
 
   @impl true
@@ -50,19 +55,21 @@ defmodule Membrane.AAC.FDK.Decoder do
   @impl true
   def handle_buffer(:input, %Buffer{payload: payload, pts: pts}, ctx, state) do
     :ok = Native.fill!(payload, state.native)
-    decoded_frames = decode_buffer!(payload, pts, state.native)
+    decoded_frames = decode_buffer!(payload, state.native)
 
-    format_action = get_format_if_needed(ctx.pads.output.stream_format, state)
-    buffer_actions = [buffer: {:output, decoded_frames}]
+    {format_action, state} =
+      get_format_if_needed(ctx.pads.output.stream_format, decoded_frames, state)
 
-    {format_action ++ buffer_actions, state}
+    buffers =
+      Enum.map(decoded_frames, &%Buffer{payload: &1, pts: shift_pts(pts, state.pts_offset)})
+
+    {format_action ++ [buffer: {:output, buffers}], state}
   end
 
-  defp decode_buffer!(payload, pts, native, acc \\ []) do
+  defp decode_buffer!(payload, native, acc \\ []) do
     case Native.decode_frame(payload, native) do
       {:ok, decoded_frame} ->
-        # Accumulate decoded frames
-        decode_buffer!(payload, pts, native, [%Buffer{payload: decoded_frame, pts: pts} | acc])
+        decode_buffer!(payload, native, [decoded_frame | acc])
 
       {:error, :not_enough_bits} ->
         # Means that we've parsed the whole buffer.
@@ -73,14 +80,19 @@ defmodule Membrane.AAC.FDK.Decoder do
     end
   end
 
-  defp get_format_if_needed(nil, state) do
-    {:ok, {_frame_size, sample_rate, channels}} = Native.get_metadata(state.native)
+  # Stream info is only valid once the decoder has produced a frame.
+  defp get_format_if_needed(nil, [_frame | _rest], state) do
+    {:ok, {_frame_size, sample_rate, channels, output_delay}} =
+      Native.get_metadata(state.native)
 
-    [
-      stream_format:
-        {:output, %RawAudio{sample_format: :s16le, sample_rate: sample_rate, channels: channels}}
-    ]
+    format = %RawAudio{sample_format: :s16le, sample_rate: sample_rate, channels: channels}
+    pts_offset = RawAudio.frames_to_time(output_delay, format)
+
+    {[stream_format: {:output, format}], %{state | pts_offset: pts_offset}}
   end
 
-  defp get_format_if_needed(_format, _state), do: []
+  defp get_format_if_needed(_format, _frames, state), do: {[], state}
+
+  defp shift_pts(nil, _offset), do: nil
+  defp shift_pts(pts, offset), do: pts - offset
 end
