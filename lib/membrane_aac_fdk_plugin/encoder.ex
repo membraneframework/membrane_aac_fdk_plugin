@@ -171,7 +171,7 @@ defmodule Membrane.AAC.FDK.Encoder do
 
     state =
       if state.queue == <<>> do
-        %{state | current_pts: input_pts && input_pts - state.pts_offset}
+        %{state | current_pts: input_pts}
       else
         state
       end
@@ -201,9 +201,8 @@ defmodule Membrane.AAC.FDK.Encoder do
     actions = [end_of_stream: :output]
 
     with {:ok, encoded_frame} <- Native.encode_frame(<<>>, native) do
-      buffer_actions = [
-        buffer: {:output, %Buffer{payload: encoded_frame, pts: state.current_pts}}
-      ]
+      {pts, state} = bump_current_pts(state, <<>>)
+      buffer_actions = [buffer: {:output, %Buffer{payload: encoded_frame, pts: pts}}]
 
       {buffer_actions ++ actions, state}
     else
@@ -224,10 +223,8 @@ defmodule Membrane.AAC.FDK.Encoder do
        when byte_size(buffer) >= raw_frame_size do
     <<raw_frame::binary-size(^raw_frame_size), rest::binary>> = buffer
 
-    encoded_buffer = %Buffer{
-      payload: Native.encode_frame!(raw_frame, native),
-      pts: state.current_pts
-    }
+    {pts, state} = bump_current_pts(state, raw_frame)
+    encoded_buffer = %Buffer{payload: Native.encode_frame!(raw_frame, native), pts: pts}
 
     # Continue encoding the rest until no more frames are available in the queue
     encode_buffer(
@@ -236,7 +233,7 @@ defmodule Membrane.AAC.FDK.Encoder do
       raw_frame_size,
       [encoded_buffer | acc],
       bytes_used + raw_frame_size,
-      bump_current_pts(state, raw_frame)
+      state
     )
   end
 
@@ -246,7 +243,7 @@ defmodule Membrane.AAC.FDK.Encoder do
     {acc |> Enum.reverse(), bytes_used, state}
   end
 
-  defp bump_current_pts(%{current_pts: nil} = state, _raw_frame), do: state
+  defp bump_current_pts(%{current_pts: nil} = state, _raw_frame), do: {nil, state}
 
   defp bump_current_pts(state, raw_frame) do
     duration =
@@ -254,7 +251,7 @@ defmodule Membrane.AAC.FDK.Encoder do
       |> byte_size()
       |> RawAudio.bytes_to_time(state.input_stream_format)
 
-    Map.update!(state, :current_pts, &(&1 + duration))
+    {state.current_pts - state.pts_offset, %{state | current_pts: state.current_pts + duration}}
   end
 
   defp mk_native!(channels, sample_rate, aot, bitrate_mode, bitrate) do
