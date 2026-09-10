@@ -83,6 +83,17 @@ defmodule Membrane.AAC.FDK.Encoder do
                 type: :integer,
                 spec: pos_integer() | nil,
                 default: nil
+              ],
+              compensate_delay: [
+                description: """
+                The encoder delays its output by a number of priming samples that depends on the AOT.
+                When set to true, the timestamps of output buffers are shifted back by that delay,
+                so that a buffer's `pts` describes the samples it actually contains.
+                Note: it might cause timestamps to become negative!
+                """,
+                type: :boolean,
+                spec: boolean(),
+                default: false
               ]
 
   def_output_pad :output, accepted_format: %AAC{encapsulation: :ADTS}
@@ -100,7 +111,8 @@ defmodule Membrane.AAC.FDK.Encoder do
       |> Map.merge(%{
         native: nil,
         queue: <<>>,
-        current_pts: nil
+        current_pts: nil,
+        pts_offset: 0
       })
 
     {[], state}
@@ -133,10 +145,16 @@ defmodule Membrane.AAC.FDK.Encoder do
       encapsulation: :ADTS
     }
 
+    pts_offset =
+      if state.compensate_delay,
+        do: native |> Native.get_delay() |> RawAudio.frames_to_time(format),
+        else: 0
+
     {[stream_format: {:output, out_format}],
      Map.merge(state, %{
        native: native,
-       input_stream_format: format
+       input_stream_format: format,
+       pts_offset: pts_offset
      })}
   end
 
@@ -183,9 +201,8 @@ defmodule Membrane.AAC.FDK.Encoder do
     actions = [end_of_stream: :output]
 
     with {:ok, encoded_frame} <- Native.encode_frame(<<>>, native) do
-      buffer_actions = [
-        buffer: {:output, %Buffer{payload: encoded_frame, pts: state.current_pts}}
-      ]
+      {pts, state} = next_pts(state, <<>>)
+      buffer_actions = [buffer: {:output, %Buffer{payload: encoded_frame, pts: pts}}]
 
       {buffer_actions ++ actions, state}
     else
@@ -206,10 +223,8 @@ defmodule Membrane.AAC.FDK.Encoder do
        when byte_size(buffer) >= raw_frame_size do
     <<raw_frame::binary-size(^raw_frame_size), rest::binary>> = buffer
 
-    encoded_buffer = %Buffer{
-      payload: Native.encode_frame!(raw_frame, native),
-      pts: state.current_pts
-    }
+    {pts, state} = next_pts(state, raw_frame)
+    encoded_buffer = %Buffer{payload: Native.encode_frame!(raw_frame, native), pts: pts}
 
     # Continue encoding the rest until no more frames are available in the queue
     encode_buffer(
@@ -218,7 +233,7 @@ defmodule Membrane.AAC.FDK.Encoder do
       raw_frame_size,
       [encoded_buffer | acc],
       bytes_used + raw_frame_size,
-      bump_current_pts(state, raw_frame)
+      state
     )
   end
 
@@ -228,15 +243,15 @@ defmodule Membrane.AAC.FDK.Encoder do
     {acc |> Enum.reverse(), bytes_used, state}
   end
 
-  defp bump_current_pts(%{current_pts: nil} = state, _raw_frame), do: state
+  defp next_pts(%{current_pts: nil} = state, _raw_frame), do: {nil, state}
 
-  defp bump_current_pts(state, raw_frame) do
+  defp next_pts(state, raw_frame) do
     duration =
       raw_frame
       |> byte_size()
       |> RawAudio.bytes_to_time(state.input_stream_format)
 
-    Map.update!(state, :current_pts, &(&1 + duration))
+    {state.current_pts - state.pts_offset, %{state | current_pts: state.current_pts + duration}}
   end
 
   defp mk_native!(channels, sample_rate, aot, bitrate_mode, bitrate) do
