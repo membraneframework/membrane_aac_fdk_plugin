@@ -11,6 +11,9 @@ spec create(
 ) :: {:ok :: label, state}
   | {:error :: label, reason :: atom}
 
+spec get_delay(state) :: {:ok :: label, delay :: int}
+  | {:error :: label, reason :: atom}
+
 spec encode_frame(payload, state) :: {:ok :: label, payload}
   | {:error :: label, reason :: atom}
   | {:error :: label, :no_data :: label}

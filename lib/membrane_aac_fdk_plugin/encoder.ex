@@ -83,6 +83,17 @@ defmodule Membrane.AAC.FDK.Encoder do
                 type: :integer,
                 spec: pos_integer() | nil,
                 default: nil
+              ],
+              compensate_delay: [
+                description: """
+                The encoder delays its output by a number of priming samples that depends on the AOT.
+                When set to true, the timestamps of output buffers are shifted back by that delay,
+                so that a buffer's `pts` describes the samples it actually contains.
+                Note: it might cause timestamps to become negative!
+                """,
+                type: :boolean,
+                spec: boolean(),
+                default: false
               ]
 
   def_output_pad :output, accepted_format: %AAC{encapsulation: :ADTS}
@@ -100,7 +111,8 @@ defmodule Membrane.AAC.FDK.Encoder do
       |> Map.merge(%{
         native: nil,
         queue: <<>>,
-        current_pts: nil
+        current_pts: nil,
+        pts_offset: 0
       })
 
     {[], state}
@@ -133,10 +145,16 @@ defmodule Membrane.AAC.FDK.Encoder do
       encapsulation: :ADTS
     }
 
+    pts_offset =
+      if state.compensate_delay,
+        do: native |> get_delay!() |> RawAudio.frames_to_time(format),
+        else: 0
+
     {[stream_format: {:output, out_format}],
      Map.merge(state, %{
        native: native,
-       input_stream_format: format
+       input_stream_format: format,
+       pts_offset: pts_offset
      })}
   end
 
@@ -184,7 +202,7 @@ defmodule Membrane.AAC.FDK.Encoder do
 
     with {:ok, encoded_frame} <- Native.encode_frame(<<>>, native) do
       buffer_actions = [
-        buffer: {:output, %Buffer{payload: encoded_frame, pts: state.current_pts}}
+        buffer: {:output, %Buffer{payload: encoded_frame, pts: output_pts(state)}}
       ]
 
       {buffer_actions ++ actions, state}
@@ -208,7 +226,7 @@ defmodule Membrane.AAC.FDK.Encoder do
 
     encoded_buffer = %Buffer{
       payload: Native.encode_frame!(raw_frame, native),
-      pts: state.current_pts
+      pts: output_pts(state)
     }
 
     # Continue encoding the rest until no more frames are available in the queue
@@ -227,6 +245,9 @@ defmodule Membrane.AAC.FDK.Encoder do
     # Return accumulated encoded frames
     {acc |> Enum.reverse(), bytes_used, state}
   end
+
+  defp output_pts(%{current_pts: nil}), do: nil
+  defp output_pts(state), do: state.current_pts - state.pts_offset
 
   defp bump_current_pts(%{current_pts: nil} = state, _raw_frame), do: state
 
@@ -254,6 +275,13 @@ defmodule Membrane.AAC.FDK.Encoder do
     |> case do
       {:ok, native} -> native
       {:error, reason} -> raise "Failed to create native encoder: #{inspect(reason)}"
+    end
+  end
+
+  defp get_delay!(native) do
+    case Native.get_delay(native) do
+      {:ok, delay} -> delay
+      {:error, reason} -> raise "Failed to get encoder delay: #{inspect(reason)}"
     end
   end
 

@@ -3,6 +3,7 @@ defmodule Membrane.FLAC.Parser.IntegrationTest do
   import Membrane.Testing.Assertions
   alias Membrane.{Buffer, Pipeline, RawAudio, Testing, Time}
 
+  @encoder_input_format %RawAudio{sample_format: :s16le, sample_rate: 16_000, channels: 1}
   @decoder_output_format %RawAudio{sample_format: :s16le, sample_rate: 44_100, channels: 2}
   # 1024 samples of concealment lookahead plus 15 ms of PCM limiter
   @decoder_delay RawAudio.frames_to_time(1685, @decoder_output_format)
@@ -15,6 +16,20 @@ defmodule Membrane.FLAC.Parser.IntegrationTest do
 
       # every other buffer gets queued and concated with next one to be big enough, because of that we expect different pts than on input
       assert out_pts == (index * 2 * 1000) |> Time.nanoseconds()
+    end)
+
+    Pipeline.terminate(pipeline)
+  end
+
+  test "encode with timestamps compensated for delay" do
+    pipeline = prepare_pts_test_pipeline(true, compensate_delay: true)
+
+    # 2048 samples of priming for AAC-LC
+    priming_delay = RawAudio.frames_to_time(2048, @encoder_input_format)
+
+    Enum.each(0..294, fn index ->
+      assert_sink_buffer(pipeline, :sink, %Membrane.Buffer{pts: out_pts})
+      assert out_pts == Time.nanoseconds(index * 2 * 1000) - priming_delay
     end)
 
     Pipeline.terminate(pipeline)
@@ -66,19 +81,15 @@ defmodule Membrane.FLAC.Parser.IntegrationTest do
     Testing.Pipeline.start_link_supervised!(spec: spec)
   end
 
-  defp prepare_pts_test_pipeline(with_pts?) do
+  defp prepare_pts_test_pipeline(with_pts?, encoder_opts \\ []) do
     import Membrane.ChildrenSpec
 
     spec =
       child(:source, %Membrane.Testing.Source{
         output: buffers_from_file(with_pts?),
-        stream_format: %Membrane.RawAudio{
-          sample_format: :s16le,
-          sample_rate: 16_000,
-          channels: 1
-        }
+        stream_format: @encoder_input_format
       })
-      |> child(:aac_encoder, Membrane.AAC.FDK.Encoder)
+      |> child(:aac_encoder, struct!(Membrane.AAC.FDK.Encoder, encoder_opts))
       |> child(:sink, Membrane.Testing.Sink)
 
     Membrane.Testing.Pipeline.start_link_supervised!(spec: spec)
