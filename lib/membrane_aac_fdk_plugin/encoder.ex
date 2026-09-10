@@ -201,7 +201,7 @@ defmodule Membrane.AAC.FDK.Encoder do
     actions = [end_of_stream: :output]
 
     with {:ok, encoded_frame} <- Native.encode_frame(<<>>, native) do
-      {pts, state} = bump_current_pts(state, <<>>)
+      {pts, state} = next_pts(state, <<>>)
       buffer_actions = [buffer: {:output, %Buffer{payload: encoded_frame, pts: pts}}]
 
       {buffer_actions ++ actions, state}
@@ -223,7 +223,7 @@ defmodule Membrane.AAC.FDK.Encoder do
        when byte_size(buffer) >= raw_frame_size do
     <<raw_frame::binary-size(^raw_frame_size), rest::binary>> = buffer
 
-    {pts, state} = bump_current_pts(state, raw_frame)
+    {pts, state} = next_pts(state, raw_frame)
     encoded_buffer = %Buffer{payload: Native.encode_frame!(raw_frame, native), pts: pts}
 
     # Continue encoding the rest until no more frames are available in the queue
@@ -243,9 +243,9 @@ defmodule Membrane.AAC.FDK.Encoder do
     {acc |> Enum.reverse(), bytes_used, state}
   end
 
-  defp bump_current_pts(%{current_pts: nil} = state, _raw_frame), do: {nil, state}
+  defp next_pts(%{current_pts: nil} = state, _raw_frame), do: {nil, state}
 
-  defp bump_current_pts(state, raw_frame) do
+  defp next_pts(state, raw_frame) do
     duration =
       raw_frame
       |> byte_size()
