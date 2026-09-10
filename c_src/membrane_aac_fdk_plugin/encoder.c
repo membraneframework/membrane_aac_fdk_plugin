@@ -194,7 +194,7 @@ UNIFEX_TERM create(
 
   state->aac_buffer = unifex_alloc(MAX_AAC_BUFFER_SIZE);
   if (!state->aac_buffer) {
-    MEMBRANE_WARN(env, "AAC: Unable to initialize AAC buffer\n", err);
+    MEMBRANE_WARN(env, "AAC: Unable to initialize AAC buffer\n");
     return create_result_error(env, "no_memory");
   }
 
@@ -208,6 +208,19 @@ UNIFEX_TERM create(
   UNIFEX_TERM res = create_result_ok(env, state);
   unifex_release_state(env, state);
   return res;
+}
+
+/**
+ * Returns the encoder's algorithmic delay in PCM samples per channel.
+ * Valid only after the encoder has been initialized in create/0.
+ */
+UNIFEX_TERM get_delay(UnifexEnv *env, State *state) {
+  AACENC_InfoStruct info = {0};
+  AACENC_ERROR err = aacEncInfo(state->handle, &info);
+  if (err != AACENC_OK) {
+    return unifex_raise(env, get_error_message(err));
+  }
+  return get_delay_result(env, info.nDelay);
 }
 
 /**

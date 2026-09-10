@@ -6,7 +6,7 @@ spec create() :: {:ok :: label, state}
   | {:error :: label, :unknown :: label}
   | {:error :: label, :no_memory :: label}
 
-spec get_metadata(state) :: {:ok, {frame_size :: long, sample_rate :: long, channels :: int}}
+spec get_metadata(state) :: {:ok, {frame_size :: long, sample_rate :: long, channels :: int, output_delay :: long}}
 
 spec fill(payload, state) :: (:ok :: label)
   | {:error :: label, :invalid_data :: label}

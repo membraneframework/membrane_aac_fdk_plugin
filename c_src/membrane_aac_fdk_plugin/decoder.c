@@ -46,7 +46,9 @@ UNIFEX_TERM create(UnifexEnv *env) {
  * Expects Native resource as argument
  *
  * Returns:
- * - {:ok, {frame_size, sample_rate, channels}}
+ * - {:ok, {frame_size, sample_rate, channels, output_delay}}
+ *   output_delay is the number of samples by which the decoder delays its
+ *   output (concealment, limiter lookahead, SBR).
  */
 UNIFEX_TERM get_metadata(UnifexEnv *env, State *state) {
   UNIFEX_TERM res;
@@ -54,7 +56,11 @@ UNIFEX_TERM get_metadata(UnifexEnv *env, State *state) {
   CStreamInfo *stream_info = aacDecoder_GetStreamInfo(state->handle);
 
   res = get_metadata_result(
-      env, stream_info->frameSize, stream_info->sampleRate, stream_info->numChannels
+      env,
+      stream_info->frameSize,
+      stream_info->sampleRate,
+      stream_info->numChannels,
+      stream_info->outputDelay
   );
   return res;
 }
