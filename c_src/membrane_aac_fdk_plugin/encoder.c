@@ -194,7 +194,7 @@ UNIFEX_TERM create(
 
   state->aac_buffer = unifex_alloc(MAX_AAC_BUFFER_SIZE);
   if (!state->aac_buffer) {
-    MEMBRANE_WARN(env, "AAC: Unable to initialize AAC buffer\n", err);
+    MEMBRANE_WARN(env, "AAC: Unable to initialize AAC buffer\n");
     return create_result_error(env, "no_memory");
   }
 
@@ -218,10 +218,9 @@ UNIFEX_TERM get_delay(UnifexEnv *env, State *state) {
   AACENC_InfoStruct info = {0};
   AACENC_ERROR err = aacEncInfo(state->handle, &info);
   if (err != AACENC_OK) {
-    MEMBRANE_WARN(env, "AAC: Unable to get encoder info: %x\n", err);
-    return get_delay_result_error(env, get_error_message(err));
+    return unifex_raise(env, get_error_message(err));
   }
-  return get_delay_result_ok(env, info.nDelay);
+  return get_delay_result(env, info.nDelay);
 }
 
 /**

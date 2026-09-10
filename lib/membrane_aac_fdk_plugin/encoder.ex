@@ -147,7 +147,7 @@ defmodule Membrane.AAC.FDK.Encoder do
 
     pts_offset =
       if state.compensate_delay,
-        do: native |> get_delay!() |> RawAudio.frames_to_time(format),
+        do: native |> Native.get_delay() |> RawAudio.frames_to_time(format),
         else: 0
 
     {[stream_format: {:output, out_format}],
@@ -171,7 +171,7 @@ defmodule Membrane.AAC.FDK.Encoder do
 
     state =
       if state.queue == <<>> do
-        %{state | current_pts: input_pts}
+        %{state | current_pts: input_pts && input_pts - state.pts_offset}
       else
         state
       end
@@ -202,7 +202,7 @@ defmodule Membrane.AAC.FDK.Encoder do
 
     with {:ok, encoded_frame} <- Native.encode_frame(<<>>, native) do
       buffer_actions = [
-        buffer: {:output, %Buffer{payload: encoded_frame, pts: output_pts(state)}}
+        buffer: {:output, %Buffer{payload: encoded_frame, pts: state.current_pts}}
       ]
 
       {buffer_actions ++ actions, state}
@@ -226,7 +226,7 @@ defmodule Membrane.AAC.FDK.Encoder do
 
     encoded_buffer = %Buffer{
       payload: Native.encode_frame!(raw_frame, native),
-      pts: output_pts(state)
+      pts: state.current_pts
     }
 
     # Continue encoding the rest until no more frames are available in the queue
@@ -245,9 +245,6 @@ defmodule Membrane.AAC.FDK.Encoder do
     # Return accumulated encoded frames
     {acc |> Enum.reverse(), bytes_used, state}
   end
-
-  defp output_pts(%{current_pts: nil}), do: nil
-  defp output_pts(state), do: state.current_pts - state.pts_offset
 
   defp bump_current_pts(%{current_pts: nil} = state, _raw_frame), do: state
 
@@ -275,13 +272,6 @@ defmodule Membrane.AAC.FDK.Encoder do
     |> case do
       {:ok, native} -> native
       {:error, reason} -> raise "Failed to create native encoder: #{inspect(reason)}"
-    end
-  end
-
-  defp get_delay!(native) do
-    case Native.get_delay(native) do
-      {:ok, delay} -> delay
-      {:error, reason} -> raise "Failed to get encoder delay: #{inspect(reason)}"
     end
   end
 
